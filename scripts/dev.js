@@ -11,12 +11,13 @@ if (existsSync(envPath)) {
     if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
   }
 }
-const routes = Object.fromEntries(["auth", "state", "enter", "claim", "admin", "proof"].map((n) => [`/api/${n}`, () => import(`../api/${n}.js`)]));
+const routes = Object.fromEntries(["auth", "state", "enter", "claim", "admin", "proof", "treasury"].map((n) => [`/api/${n}`, () => import(`../api/${n}.js`)]));
 const port = Number(process.env.PORT) || 3000;
 http.createServer(async (req, res) => {
   try {
     const path = req.url.split("?")[0];
     if (routes[path]) return (await routes[path]()).default(req, res);
+    if (path === "/app.js") { res.setHeader("content-type", "text/javascript; charset=utf-8"); return res.end(await readFile(new URL("app.js", root))); }
     if (path === "/" || path === "/index.html") {
       res.setHeader("content-type", "text/html; charset=utf-8");
       return res.end(await readFile(new URL("index.html", root)));

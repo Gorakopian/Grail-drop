@@ -4,9 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>GRAIL DROP</title>
-<meta name="description" content="Raffles for real watches, sneakers and Pokémon packs. Fill or refund, provably fair, paid in SOL.">
+<meta name="description" content="Raffles for real watches, sneakers and Pokémon packs. Fill or refund, 2 free spots for holders, provably fair.">
 <meta property="og:title" content="GRAIL DROP">
-<meta property="og:description" content="50 spots. One Rolex. Fill or refund, drawn by a Solana block.">
+<meta property="og:description" content="50 spots. One Rolex. 2 free spots for holders. Drawn by a Solana block.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
@@ -134,40 +134,76 @@ footer { color: var(--dim); font-size: 13px; padding-block: 40px 56px; max-width
   .tk { width: 30px; }
 }
 @media (prefers-reduced-motion: reduce) { .tk.new { animation: none; } }
+
+nav.links { display: flex; gap: 4px; flex-wrap: wrap; }
+nav.links a { color: var(--dim); text-decoration: none; padding: 8px 12px; border-radius: 10px; font-weight: 600; font-size: 15px; }
+nav.links a:hover { color: var(--paper); }
+nav.links a[aria-current="page"] { color: var(--ink); background: var(--ticket); }
+.topbar { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.page h1 { margin: 24px 0 8px; font: 400 clamp(32px, 6vw, 56px)/1 var(--font-display); }
+.lede { margin: 0 0 20px; color: var(--dim); max-width: 64ch; font-size: 17px; }
+.raffle h3 a { color: var(--paper); text-decoration: none; }
+.raffle h3 a:hover { text-decoration: underline; }
+.purse { display: flex; gap: 10px 26px; flex-wrap: wrap; align-items: baseline; border: 1px solid var(--seam); border-radius: 14px; padding: 12px 16px; margin-top: 8px; max-width: 720px; }
+.purse b { font-size: 20px; }
+.purse span { color: var(--dim); font-size: 14px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.stat { background: var(--velvet-2); border: 1px solid var(--seam); border-radius: 14px; padding: 14px 16px; }
+.stat .k { color: var(--dim); font-size: 14px; }
+.stat .v { font: 400 28px/1.15 var(--font-display); margin-top: 4px; overflow-wrap: anywhere; }
+.stat .s { color: var(--dim); font-size: 13px; margin-top: 4px; }
+.panel { background: var(--velvet-2); border: 1px solid var(--seam); border-radius: 18px; padding: 16px; margin-bottom: 16px; display: grid; gap: 12px; min-width: 0; }
+.panel h2 { margin: 0; font-size: 20px; }
+.cols { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+.cols > .panel { margin-bottom: 0; }
+ol.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; counter-reset: st; }
+ol.steps li { counter-increment: st; display: grid; grid-template-columns: 30px 1fr; gap: 10px; padding-bottom: 14px; position: relative; color: var(--dim); }
+ol.steps li::before { content: counter(st); width: 26px; height: 26px; border-radius: 50%; border: 1px solid var(--seam); display: grid; place-items: center; font-size: 13px; background: var(--velvet); z-index: 1; }
+ol.steps li:not(:last-child)::after { content: ""; position: absolute; left: 13px; top: 26px; bottom: 0; width: 1px; background: var(--seam); }
+ol.steps li.done { color: var(--paper); }
+ol.steps li.done::before { content: "✓"; background: var(--sold); border-color: var(--sold); color: var(--paper); }
+ol.steps li.now { color: var(--paper); font-weight: 600; }
+ol.steps li.now::before { background: var(--ticket); border-color: var(--ticket); color: var(--ink); }
+ol.steps small { display: block; font-weight: 400; color: var(--dim); font-size: 13px; }
+.tablewrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th { text-align: left; color: var(--dim); font-weight: 500; font-size: 13px; padding: 8px 10px; border-bottom: 1px solid var(--seam); white-space: nowrap; }
+td { padding: 10px; border-bottom: 1px solid rgba(90,35,51,.6); vertical-align: top; }
+td a { color: var(--paper); }
+.addr { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere; }
+.stage { display: inline-block; border-radius: 99px; padding: 2px 10px; font-size: 13px; font-weight: 600; background: var(--velvet); border: 1px solid var(--seam); white-space: nowrap; }
+.stage.open { background: var(--ticket); color: var(--ink); border-color: var(--ticket); }
+.stage.drawn { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; margin: 0; }
+dl.kv dt { color: var(--dim); }
+dl.kv dd { margin: 0; overflow-wrap: anywhere; }
+.checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.checks li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; }
+.checks li::before { content: "…"; color: var(--dim); }
+.checks li.ok::before { content: "✓"; color: var(--ok); }
+.checks li.bad::before { content: "✗"; color: var(--bad); }
+@media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="logo" href="/">GRAIL DROP</a>
+    <div class="topbar">
+      <a class="logo" href="#/">GRAIL DROP</a>
+      <nav class="links" aria-label="Pages">
+        <a href="#/" data-nav="home">Raffles</a>
+        <a href="#/all" data-nav="all">All raffles</a>
+        <a href="#/treasury" data-nav="treasury">Treasury</a>
+        <a href="#/verify" data-nav="verify">Verify a draw</a>
+      </nav>
+    </div>
     <div class="wallet" id="wallet"></div>
   </header>
-
-  <section class="hero">
-    <h1>One spot could be a Rolex.</h1>
-    <p>Raffles for real watches, sneakers and Pokémon packs, bought on Courtyard and sent to the winner. Every raffle fills or refunds, and a Solana block picks the winner.</p>
-    <div class="pot" id="pot" hidden></div>
-  </section>
 
   <p class="notice" id="blocked" hidden></p>
   <p class="notice" id="err" hidden></p>
 
-  <h2 id="liveTitle">Live raffles</h2>
-  <div id="live"><p class="empty">Loading raffles…</p></div>
-
-  <div id="pastWrap" hidden>
-    <h2>Finished</h2>
-    <div id="past"></div>
-  </div>
-
-  <h2>How it works</h2>
-  <div class="rules" id="rules">
-    <div><h3>Fill or refund</h3><p>The draw only happens when every spot is sold. If a raffle isn't full by its deadline, everyone gets their SOL back.</p></div>
-    <div><h3 id="ruleHoldT">Holders only</h3><p id="ruleHold">Hold 2M of the coin for 24 hours to buy spots. Max 2 spots per wallet per raffle.</p></div>
-    <div><h3>A free spot for a holder</h3><p>When a raffle fills, one extra spot goes to a random holder, for free. Coin fees pay for these extras.</p></div>
-    <div><h3>Provably fair</h3><p>The spots are locked first, then the hash of a Solana block about 15 seconds later picks the winner. Anyone can check it.</p></div>
-    <div><h3>Real prizes</h3><p>Prizes are bought on Courtyard after the raffle fills. You get the item there: keep it, ship it home, or sell it back.</p></div>
-  </div>
+  <main id="view"><p class="empty">Loading raffles…</p></main>
 
   <section class="admin" id="admin" hidden>
     <h2>Admin</h2>
@@ -176,7 +212,8 @@ footer { color: var(--dim); font-size: 13px; padding-block: 40px 56px; max-width
         <label>Title<input type="text" name="title" required placeholder="Rolex watch box"></label>
         <label>Category<select name="category"><option value="watch">Watch</option><option value="sneakers">Sneakers</option><option value="pokemon">Pokémon</option><option value="cards">Cards</option><option value="other">Other</option></select></label>
         <label>Prize value ($)<input type="number" name="prizeUsd" min="1" required></label>
-        <label>Spots<input type="number" name="spots" min="2" max="1000" value="50" required></label>
+        <label>Paid spots<input type="number" name="spots" min="2" max="1000" value="50" required></label>
+        <label>Free holder spots<input type="number" name="freeSpots" min="0" max="5" value="2"></label>
         <label>Price per spot (SOL)<input type="number" name="priceSol" step="0.001" min="0.001" required></label>
         <label>Max per wallet<input type="number" name="maxPerWallet" min="1" value="2"></label>
         <label>Open for (hours)<input type="number" name="hours" min="1" value="72"></label>
@@ -188,19 +225,11 @@ footer { color: var(--dim); font-size: 13px; padding-block: 40px 56px; max-width
       <p class="msg" id="suggest"></p>
       <div class="row"><button class="btn primary" type="submit">Create raffle</button><span class="msg" id="createMsg"></span></div>
     </form>
-    <form id="potForm">
-      <div class="grid">
-        <label>Bonus pot now ($)<input type="number" name="potUsd" min="0"></label>
-        <label>Next unlock at ($)<input type="number" name="goalUsd" min="0"></label>
-        <label>What it unlocks<input type="text" name="goalLabel" placeholder="Weekly Rolex raffle"></label>
-      </div>
-      <div class="row"><button class="btn" type="submit">Save bonus pot</button><span class="msg" id="potMsg"></span></div>
-    </form>
     <div id="adminList"></div>
   </section>
 
   <footer>
-    18+ only. Raffles aren't available where they're prohibited, so check your local rules before you play. Payments are in SOL to the treasury wallet; prizes are bought on Courtyard after a raffle fills. Nothing here is financial advice.
+    18+ only. Raffles aren't available where they're prohibited, so check your local rules before you play. Spot payments go to the entry wallet; free spots are paid from the fees wallet; prizes are bought on Courtyard after a raffle fills. Nothing here is financial advice.
   </footer>
 </div>
 
@@ -213,406 +242,6 @@ footer { color: var(--dim); font-size: 13px; padding-block: 40px 56px; max-width
   </div>
 </div>
 
-<script>
-(function () {
-  const $ = (id) => document.getElementById(id);
-  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
-  const store = { get(k) { try { return localStorage.getItem(k); } catch { return null; } }, set(k, v) { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} } };
-  const short = (w) => (w ? w.slice(0, 4) + "…" + w.slice(-4) : "");
-  const LAMPORTS = 1e9;
-  const sol = (l) => +(l / LAMPORTS).toFixed(4);
-  const usd = (n) => "$" + Math.round(n).toLocaleString("en-US");
-  const ICON = { watch: "⌚", sneakers: "👟", pokemon: "🃏", cards: "🃏", other: "🎁" };
-
-  let token = store.get("gd_token");
-  let state = null;
-  const ui = {};          // per-raffle message + just-bought spot numbers
-  let busy = false;
-
-  async function api(path, body) {
-    const res = await fetch(path, {
-      method: body ? "POST" : "GET",
-      headers: { "content-type": "application/json", ...(token ? { authorization: "Bearer " + token } : {}) },
-      body: body ? JSON.stringify(body) : undefined, cache: "no-store",
-    });
-    const data = await res.json().catch(() => ({}));
-    if (res.status === 401 && token && path.startsWith("/api/state")) { token = null; store.set("gd_token", null); }
-    if (!res.ok && !data.status) throw new Error(data.error || "Something went wrong.");
-    return data;
-  }
-  const showError = (m) => { $("err").textContent = m || ""; $("err").hidden = !m; };
-
-  // ---------- wallet ----------
-  const provider = () => window.phantom?.solana || window.solflare || window.backpack || window.solana || null;
-  async function connect() {
-    showError("");
-    const p = provider();
-    if (!p) {
-      const url = encodeURIComponent(location.href), ref = encodeURIComponent(location.origin);
-      $("openPhantom").href = `https://phantom.app/ul/browse/${url}?ref=${ref}`;
-      $("openSolflare").href = `https://solflare.com/ul/v1/browse/${url}?ref=${ref}`;
-      $("noWallet").hidden = false;
-      return;
-    }
-    try {
-      const r = await p.connect();
-      const address = (r?.publicKey || p.publicKey).toString();
-      const n = await api("/api/auth?step=nonce", { address });
-      const signed = await p.signMessage(new TextEncoder().encode(n.message), "utf8");
-      const sig = signed?.signature || signed;
-      const v = await api("/api/auth?step=verify", { address, nonce: n.nonce, signature: btoa(String.fromCharCode(...new Uint8Array(sig))) });
-      token = v.token; store.set("gd_token", token);
-      await load();
-    } catch (e) { showError(/reject/i.test(e?.message) ? "Sign-in cancelled." : e.message || "Couldn't connect your wallet."); }
-  }
-  $("closeNoWallet").onclick = () => { $("noWallet").hidden = true; };
-
-  function renderWallet() {
-    const box = $("wallet"); box.replaceChildren();
-    if (!state?.me) {
-      const b = el("button", "btn primary", "Connect wallet"); b.type = "button"; b.onclick = connect; box.append(b); return;
-    }
-    const g = state.me.gate, c = state.coin;
-    if (c.live) {
-      const need = (c.minHold / 1e6).toLocaleString("en") + "M $" + c.symbol;
-      const chip = g?.ok ? el("span", "chip ok", `Holder ✓ ${Math.floor((g.balance || 0) / 1e6 * 10) / 10}M $${c.symbol}`)
-        : el("span", "chip no", g?.reason === "not_long_enough" ? `Hold ${need} for ${c.holdHours}h to enter` : g?.reason === "too_busy" ? "Hold check pending" : `Need ${need} to enter`);
-      box.append(chip);
-    }
-    box.append(el("span", "chip", short(state.me.wallet)));
-    const out = el("button", "btn small", "Sign out"); out.type = "button";
-    out.onclick = async () => { try { await api("/api/auth?step=logout", {}); } catch {} token = null; store.set("gd_token", null); await load(); };
-    box.append(out);
-  }
-
-  // ---------- rendering ----------
-  function countdown(ts) {
-    const s = Math.max(0, ts - Date.now() / 1000);
-    if (s < 60) return "under a minute";
-    const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60);
-    return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`;
-  }
-
-  function strip(r) {
-    const box = el("div", "strip" + (r.status === "open" || r.status === "drawing" ? "" : " closed"));
-    const total = r.spots;
-    const mine = new Set(r.mySpots || []);
-    const fresh = new Set(ui[r.id]?.fresh || []);
-    const winIdx = r.status === "drawn" ? r.draw.index : -1;
-    const show = Math.min(total, 120);
-    for (let i = 0; i < show; i++) {
-      let cls = "tk";
-      if (i < r.sold) cls += mine.has(i) ? " mine" : " sold";
-      else if (i < r.sold + r.reserved) cls += " held";
-      if (i === winIdx) cls += " win";
-      if (fresh.has(i)) cls += " new";
-      const t = el("span", cls, String(i + 1));
-      t.title = i === winIdx ? "Winning spot" : mine.has(i) ? "Your spot" : i < r.sold ? "Taken" : i < r.sold + r.reserved ? "Being paid for" : "Free";
-      box.append(t);
-    }
-    if (total > show) box.append(el("span", "msg", `+${total - show} more`));
-    if (r.holderSpot && state.coin.live && !/refund/.test(r.status)) {
-      const t = el("span", "tk star" + (winIdx === total ? " win" : ""), "★");
-      t.title = "Free spot for a random holder";
-      box.append(t);
-    }
-    return box;
-  }
-
-  function raffleCard(r) {
-    const card = el("article", "raffle");
-    const pic = el("div", "pic");
-    if (r.image) pic.style.backgroundImage = `url("${r.image.replace(/"/g, "")}")`; else { pic.textContent = ICON[r.category] || "🎁"; pic.classList.add("noimg"); }
-    pic.setAttribute("role", "img"); pic.setAttribute("aria-label", r.title);
-    const body = el("div", "body");
-
-    const head = el("div", "head");
-    const h = el("h3"); h.textContent = r.title;
-    const val = el("span", "value"); val.append("Worth "); val.append(el("b", null, usd(r.prizeUsd)));
-    if (r.link) { val.append(" "); const a = el("a", null, "on Courtyard"); a.href = r.link; a.target = "_blank"; a.rel = "noopener"; val.append(a); }
-    head.append(h, val);
-
-    const facts = el("div", "facts");
-    const left = r.spots - r.sold;
-    const f1 = el("span"); f1.append(el("b", null, `${r.sold} of ${r.spots}`), " spots sold");
-    facts.append(f1);
-    if (r.status === "open") { const f2 = el("span"); f2.append("Fills or refunds in ", el("b", null, countdown(r.deadline))); facts.append(f2); }
-    const odds = r.spots + (r.holderSpot && state.coin.live ? 1 : 0);
-    facts.append(el("span", null, `1 in ${odds} per spot`));
-    if (r.mine) { const f3 = el("span"); f3.append("You have ", el("b", null, `${r.mine}`)); facts.append(f3); }
-
-    const meter = el("div", "meter");
-    meter.append(strip(r));
-    const lg = el("div", "legend");
-    if (r.status === "open") lg.append(el("span", null, "Free"));
-    lg.append(el("span", "l-sold", "Taken"));
-    if (r.mine) lg.append(el("span", "l-mine", "Yours"));
-    if (r.holderSpot && state.coin.live && !/refund/.test(r.status)) lg.append(el("span", "l-star", "Free holder spot"));
-    meter.append(lg);
-
-    body.append(head, facts, meter);
-    if (r.status === "open") body.append(buyRow(r, left));
-    else body.append(resultBlock(r));
-    if (r.myRefunds) for (const f of r.myRefunds) body.append(el("p", "msg " + (f.paid ? "ok" : ""), f.paid ? `Refunded ${sol(f.lamports)} SOL to your wallet.` : `You'll get ${sol(f.lamports)} SOL back.`));
-    const m = ui[r.id]?.msg;
-    if (m) body.append(el("p", "msg " + (m.kind || ""), m.text));
-    card.append(pic, body);
-    return card;
-  }
-
-  function buyRow(r, left) {
-    const row = el("div", "buy");
-    const p = el("span", "price", `${sol(r.priceLamports)} SOL `);
-    if (state.solUsd) p.append(el("small", null, `about ${usd(sol(r.priceLamports) * state.solUsd)} per spot`));
-    row.append(p);
-    const can = Math.min(r.maxPerWallet - r.mine, left - r.reserved);
-    if (left <= 0) { row.append(el("span", "msg", "Sold out, the draw is next.")); return row; }
-    if (!state.me) { const b = el("button", "btn primary", "Connect to buy a spot"); b.type = "button"; b.onclick = connect; row.append(b); return row; }
-    if (state.coin.live && !state.me.gate?.ok) { row.append(el("span", "msg", `Hold ${(state.coin.minHold / 1e6).toLocaleString("en")}M $${state.coin.symbol} for ${state.coin.holdHours}h to buy spots.`)); return row; }
-    if (can <= 0) { row.append(el("span", "msg", r.mine >= r.maxPerWallet ? `You have the max ${r.maxPerWallet} spots.` : "All spots are being paid for. Check back in a few minutes.")); return row; }
-    for (let n = 1; n <= Math.min(can, 2); n++) {
-      const b = el("button", "btn" + (n === 1 ? " primary" : ""), n === 1 ? "Buy 1 spot" : `Buy ${n} spots`);
-      b.type = "button"; b.disabled = busy || !!state.blocked;
-      b.onclick = () => buy(r, n);
-      row.append(b);
-    }
-    return row;
-  }
-
-  function resultBlock(r) {
-    const box = el("div", "result");
-    if (r.status === "drawing") { box.append(el("p", "winner", "Sold out. Drawing the winner from the next Solana blocks…")); return box; }
-    if (r.status === "refunding" || r.status === "refunded") {
-      box.append(el("p", "msg", r.status === "refunded" ? "Didn't fill in time. Everyone was refunded." : "Didn't fill in time. Everyone gets their SOL back."));
-      return box;
-    }
-    const d = r.draw;
-    const w = el("p", "winner");
-    if (r.youWon) w.append(el("b", null, "You won this. "), "Tell us where to send it below.");
-    else w.append("Won by ", el("b", null, d.winnerShort), ` with spot ${d.index === r.spots ? "★" : d.index + 1}.`);
-    box.append(w);
-    if (d.holderPick) box.append(el("p", "msg", `Free holder spot went to ${d.holderPick.short}.`));
-    if (r.delivered) box.append(el("p", "msg ok", "Prize sent."));
-    if (r.youWon && !r.claimed) box.append(claimForm(r));
-    else if (r.youWon) box.append(el("p", "msg ok", "Got your details. Your prize is on its way."));
-    box.append(proof(r));
-    return box;
-  }
-
-  function claimForm(r) {
-    const f = el("form", "claim");
-    f.append(el("p", "msg", "Prizes come from Courtyard. Give your Courtyard username or email, or a Polygon wallet (0x…) to receive it."));
-    const row = el("div", "row");
-    const sel = el("select"); sel.append(new Option("Courtyard username or email", "courtyard"), new Option("Polygon wallet", "polygon"));
-    const inp = el("input"); inp.type = "text"; inp.required = true; inp.placeholder = "you@example.com or 0x…";
-    const b = el("button", "btn primary", "Send me my prize"); b.type = "submit";
-    row.append(sel, inp, b); f.append(row);
-    const msg = el("p", "msg"); f.append(msg);
-    f.onsubmit = async (e) => {
-      e.preventDefault(); b.disabled = true;
-      try { await api("/api/claim", { id: r.id, method: sel.value, value: inp.value }); await load(); }
-      catch (err) { msg.textContent = err.message; msg.className = "msg bad"; b.disabled = false; }
-    };
-    return f;
-  }
-
-  function proof(r) {
-    const d = r.draw;
-    const det = el("details");
-    det.append(el("summary", null, "Check the draw yourself"));
-    const dl = el("dl");
-    const add = (k, v) => { dl.append(el("dt", null, k), el("dd", null, v)); };
-    add("Spots locked", `${d.tickets} spots, list hash ${d.finalHash.slice(0, 16)}…`);
-    add("Deciding block", `slot ${d.slot}`);
-    add("Block hash", d.blockhash);
-    add("Seed", d.seed);
-    add("Winning spot", `${d.seed.slice(0, 8)}… mod ${d.tickets} = ${d.index} → spot ${d.index + 1}`);
-    det.append(dl);
-    const a = el("a", null, "See the block on Solscan"); a.href = `https://solscan.io/block/${d.slot}`; a.target = "_blank"; a.rel = "noopener";
-    const v = el("button", "btn small", "Recheck in my browser"); v.type = "button";
-    const out = el("span", "msg");
-    v.onclick = async () => {
-      out.textContent = "Checking…";
-      try {
-        const p = await api("/api/proof?id=" + r.id);
-        const h = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((x) => x.toString(16).padStart(2, "0")).join("");
-        const listHash = await h(p.tickets.join(","));
-        const seed = await h(`${p.blockhash}:${p.id}:${listHash}`);
-        const idx = Number(BigInt("0x" + seed) % BigInt(p.tickets.length));
-        const good = listHash === p.ticketsHash && seed === p.seed && p.tickets[idx] === p.winner;
-        out.textContent = good ? `Matches: spot ${idx + 1} belongs to ${short(p.winner)}.` : "Doesn't match. Something is off.";
-        out.className = "msg " + (good ? "ok" : "bad");
-      } catch (e) { out.textContent = e.message; }
-    };
-    const row = el("div", "row"); row.append(a, v, out);
-    det.append(row);
-    return det;
-  }
-
-  function renderPot() {
-    const p = state.pot, box = $("pot");
-    box.hidden = !(p.potUsd > 0 || p.goalUsd > 0);
-    if (box.hidden) return;
-    box.replaceChildren();
-    const line = el("div");
-    line.append(el("b", null, `Bonus pot ${usd(p.potUsd)}`));
-    if (p.goalUsd) line.append(` of ${usd(p.goalUsd)}${p.goalLabel ? " unlocks the " + p.goalLabel : ""}`);
-    const bar = el("div", "bar"); const i = el("i"); i.style.width = Math.min(100, p.goalUsd ? (p.potUsd / p.goalUsd) * 100 : 100) + "%"; bar.append(i);
-    box.append(line, bar, el("span", "msg", "Paid by the coin's trading fees. It funds the free holder spots and extra prizes."));
-  }
-
-  function render() {
-    renderWallet(); renderPot();
-    const c = state.coin;
-    const need = (c.minHold / 1e6).toLocaleString("en") + "M $" + c.symbol;
-    $("ruleHold").textContent = c.live ? `Hold ${need} for ${c.holdHours} hours to buy spots. Max 2 spots per wallet per raffle.` : `Once $${c.symbol} launches, you'll need to hold ${need} for ${c.holdHours} hours to buy spots. Max 2 spots per wallet per raffle.`;
-    $("blocked").hidden = !state.blocked;
-    $("blocked").textContent = state.blocked ? "Raffles aren't available in your country." : "";
-    const live = state.raffles.filter((r) => r.status === "open" || r.status === "drawing").sort((a, b) => a.deadline - b.deadline);
-    const past = state.raffles.filter((r) => !["open", "drawing"].includes(r.status));
-    $("live").replaceChildren(...(live.length ? live.map(raffleCard) : [el("p", "empty", "No raffle is open right now. The next drop gets announced on X first.")]));
-    $("pastWrap").hidden = !past.length;
-    $("past").replaceChildren(...past.slice(0, 12).map(raffleCard));
-    renderAdmin();
-    for (const k in ui) if (ui[k].fresh) setTimeout(() => { if (ui[k]) ui[k].fresh = null; }, 800);
-  }
-
-  // ---------- buying ----------
-  // A plain SOL transfer, built by hand (the web3.js helper needs Node's Buffer, which browsers don't have).
-  function transferIx(from, to, lamports) {
-    const { SystemProgram, TransactionInstruction } = window.solanaWeb3;
-    const data = new Uint8Array(12), v = new DataView(data.buffer);
-    v.setUint32(0, 2, true);                       // System Program instruction 2 = transfer
-    v.setBigUint64(4, BigInt(lamports), true);
-    return new TransactionInstruction({ programId: SystemProgram.programId, keys: [{ pubkey: from, isSigner: true, isWritable: true }, { pubkey: to, isSigner: false, isWritable: true }], data });
-  }
-  async function buy(r, n) {
-    if (busy) return;
-    const say = (text, kind) => { ui[r.id] = { ...(ui[r.id] || {}), msg: { text, kind } }; render(); };
-    if (store.get("gd_agree") !== "1") {
-      const ok = window.confirm("Before you buy: you're 18 or older, and raffles like this are allowed where you live. Continue?");
-      if (!ok) return;
-      store.set("gd_agree", "1");
-    }
-    const p = provider();
-    if (!p || !window.solanaWeb3) return say("Open this page in your Solana wallet to pay.", "bad");
-    busy = true;
-    try {
-      say("Holding your spot for 5 minutes…");
-      const hold = await api("/api/enter?step=reserve", { id: r.id, n, agree: true });
-      say(`Approve ${sol(hold.lamports)} SOL in your wallet…`);
-      const { Transaction, PublicKey } = window.solanaWeb3;
-      const me = new PublicKey(state.me.wallet);
-      const tx = new Transaction({ feePayer: me, recentBlockhash: hold.blockhash }).add(transferIx(me, new PublicKey(hold.treasury), hold.lamports));
-      const sent = await p.signAndSendTransaction(tx);
-      const sig = sent?.signature || sent;
-      say("Paid. Checking the payment on-chain…");
-      let res;
-      for (let i = 0; i < 40; i++) {
-        res = await api("/api/enter?step=confirm", { nonce: hold.nonce, sig });
-        if (res.status !== "pending") break;
-        await new Promise((ok) => setTimeout(ok, 2500));
-      }
-      busy = false;
-      if (res.status === "ok") {
-        const before = new Set(r.mySpots || []);
-        await load();
-        const now = state.raffles.find((x) => x.id === r.id);
-        ui[r.id] = { fresh: (now?.mySpots || []).filter((i) => !before.has(i)), msg: { text: n === 1 ? "You're in. Good luck." : `You're in with ${n} spots. Good luck.`, kind: "ok" } };
-        render();
-      } else if (res.status === "refund") say(res.reason, "bad");
-      else say(`Your payment is still confirming. It will show up here; keep this link: https://solscan.io/tx/${sig}`, "bad");
-    } catch (e) {
-      busy = false;
-      say(/reject|cancel/i.test(e?.message) ? "Payment cancelled. Your spot is released in 5 minutes." : e.message, "bad");
-      load();
-    }
-  }
-
-  // ---------- admin ----------
-  function renderAdmin() {
-    const admin = !!state.me?.admin;
-    $("admin").hidden = !admin;
-    if (!admin) return;
-    const pf = $("potForm");
-    if (!pf.dataset.filled) { pf.potUsd.value = state.pot.potUsd || ""; pf.goalUsd.value = state.pot.goalUsd || ""; pf.goalLabel.value = state.pot.goalLabel || ""; pf.dataset.filled = "1"; }
-    const list = $("adminList"); list.replaceChildren();
-    for (const r of state.raffles) {
-      const a = r.admin; if (!a) continue;
-      const it = el("div", "item");
-      it.append(el("b", null, `${r.title}: ${r.status}, ${r.sold} of ${r.spots} sold`));
-      if (a.claim) it.append(el("span", null, `Winner ${short(r.draw?.winner)} wants it on ${a.claim.method}: ${a.claim.value}`));
-      else if (r.status === "drawn") it.append(el("span", "msg", `Winner ${short(r.draw.winner)} hasn't said where to send it yet.`));
-      const open = a.refunds.filter((f) => !f.paid);
-      if (open.length) it.append(el("span", "msg bad", `${open.length} refund(s) to pay: ${open.map((f) => `${short(f.wallet)} ${sol(f.lamports)} SOL`).join(", ")}`));
-      const row = el("div", "row");
-      const act = (label, fn) => { const b = el("button", "btn small", label); b.type = "button"; b.onclick = fn; row.append(b); };
-      const run = async (action, extra = {}) => { try { await api("/api/admin?action=" + action, { id: r.id, ...extra }); await load(); } catch (e) { showError(e.message); } };
-      if (open.length) act(`Pay ${open.length} refund(s) from my wallet`, () => payRefunds(r, open, run));
-      if (r.status === "drawn" && !a.delivered) act("Mark prize sent", () => { const note = prompt("Note (e.g. Courtyard transfer link)") ?? ""; run("delivered", { note }); });
-      if (["open", "drawing"].includes(r.status)) act("Cancel and refund", () => confirm("Cancel this raffle and refund everyone?") && run("cancel"));
-      if (!["open", "drawing"].includes(r.status) && !open.length) act("Hide", () => run("hide"));
-      it.append(row);
-      list.append(it);
-    }
-  }
-
-  async function payRefunds(r, open, run) {
-    const p = provider();
-    if (!p || !window.solanaWeb3) return showError("Open this page in your wallet to pay refunds.");
-    try {
-      const { Transaction, PublicKey } = window.solanaWeb3;
-      const me = new PublicKey(state.me.wallet);
-      if (state.me.wallet !== state.treasury) return showError("Connect the treasury wallet to pay refunds.");
-      const batch = open.slice(0, 18);
-      const blockhash = (await api("/api/admin?action=blockhash", {}).catch(() => ({}))).blockhash;
-      if (!blockhash) return showError("Couldn't get a recent block. Try again.");
-      const tx = new Transaction({ feePayer: me, recentBlockhash: blockhash });
-      for (const f of batch) tx.add(transferIx(me, new PublicKey(f.wallet), f.lamports));
-      const sent = await p.signAndSendTransaction(tx);
-      const sig = sent?.signature || sent;
-      for (let i = 0; i < 30; i++) {
-        try { await api("/api/admin?action=refundsPaid", { id: r.id, sig }); break; }
-        catch (e) { if (i === 29) throw e; await new Promise((ok) => setTimeout(ok, 3000)); }
-      }
-      await load();
-    } catch (e) { showError(/reject/i.test(e?.message) ? "Refund cancelled." : e.message); }
-  }
-
-  $("createForm").oninput = () => {
-    const f = $("createForm");
-    const prize = Number(f.prizeUsd.value), spots = Number(f.spots.value);
-    if (prize > 0 && spots > 1 && state?.solUsd) {
-      const s = (prize * 1.1) / spots / state.solUsd;
-      $("suggest").textContent = `To cover the prize plus 10%: ${s.toFixed(3)} SOL per spot (about ${usd(s * state.solUsd)}).`;
-    } else $("suggest").textContent = "";
-  };
-  $("createForm").onsubmit = async (e) => {
-    e.preventDefault();
-    const f = e.target;
-    const body = Object.fromEntries(new FormData(f).entries());
-    try { await api("/api/admin?action=create", body); $("createMsg").textContent = "Raffle is live."; $("createMsg").className = "msg ok"; f.reset(); await load(); }
-    catch (err) { $("createMsg").textContent = err.message; $("createMsg").className = "msg bad"; }
-  };
-  $("potForm").onsubmit = async (e) => {
-    e.preventDefault();
-    try { await api("/api/admin?action=pot", Object.fromEntries(new FormData(e.target).entries())); $("potMsg").textContent = "Saved."; $("potMsg").className = "msg ok"; await load(); }
-    catch (err) { $("potMsg").textContent = err.message; $("potMsg").className = "msg bad"; }
-  };
-
-  // ---------- data ----------
-  async function load() {
-    try { state = await api("/api/state"); showError(""); }
-    catch (e) { showError(e.message); return; }
-    render();
-  }
-  async function loop() {
-    if (!busy && !document.hidden) await load();
-    const drawing = state?.raffles?.some((r) => r.status === "drawing");
-    setTimeout(loop, drawing ? 4000 : 15000);
-  }
-  loop();
-})();
-</script>
+<script src="app.js"></script>
 </body>
 </html>

@@ -10,7 +10,7 @@ const C = "WaLLetCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC";
 const MINT = "MintGRA1LxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxX";
 
 const { minBalanceSince } = await import("../lib/solana.js");
-const { winnerFrom, ticketsOf, sha256, hashList, pickIndex } = await import("../lib/draw.js");
+const { winnerFrom, ticketsOf, sha256, hashList, pickIndex, holdersHash, holderCandidate, pickFreeSpots } = await import("../lib/draw.js");
 const R = await import("../lib/raffles.js");
 const { redis } = await import("../lib/redis.js");
 
@@ -34,8 +34,21 @@ assert.equal(w.seed, sha256(`BlockHash1:r1:${hashList(t)}`));
 assert.equal(w.winner, t[pickIndex(w.seed, 3)]);
 assert.deepEqual(winnerFrom("BlockHash1", "r1", t), w, "same inputs, same winner");
 
+// free spots: equal chance per eligible wallet, never the same wallet twice
+const list = ["big", "small"];
+let bigWins = 0;
+for (let i = 0; i < 400; i++) if (holderCandidate("bh" + i, "r", holdersHash(list), list, 0).owner === "big") bigWins++;
+assert.ok(bigWins > 160 && bigWins < 240, "equal chance: " + bigWins);
+const two = await pickFreeSpots("bh", "r", list, 2, async () => true);
+assert.deepEqual([...two.winners].sort(), ["big", "small"]);
+const skip = await pickFreeSpots("bh", "r", list, 2, async (w) => w !== "big");
+assert.deepEqual(skip.winners, ["small"]);
+assert.equal(skip.rounds.find((x) => x.owner === "big").ok, false);
+
 // ---- fake chain ----
 let slot = 1000;
+let feesBalance = 0;
+const FEES = "FeesWa11etxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
 const txs = {};        // sig → parsed tx
 const holdings = { [A]: 3e6, [B]: 2.5e6, [C]: 1e6 };
 const pay = (sig, from, lamports, to = ADMIN) => { txs[sig] = { blockTime: Math.floor(Date.now() / 1000), meta: { err: null, innerInstructions: [] }, transaction: { message: { instructions: [{ program: "system", parsed: { type: "transfer", info: { source: from, destination: to, lamports } } }] } } }; };
@@ -55,6 +68,7 @@ globalThis.fetch = async (url, init = {}) => {
     case "getTokenAccounts": return res({ token_accounts: Object.entries(holdings).map(([owner, a]) => ({ owner, amount: a * 1e6 })).concat([{ owner: "CurvePoo1xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx", amount: 8e8 * 1e6 }]) });
     case "getBlocks": return res(slot >= params[0] ? [params[0] + 2] : []);
     case "getBlock": return res({ blockhash: "FutureBlockHash" + params[0] });
+    case "getBalance": return res({ value: feesBalance });
     default: throw new Error("unexpected rpc " + method);
   }
 };
@@ -89,13 +103,23 @@ assert.match((await R.reserve({ id: r.id, wallet: C, n: 1 })).error, /closed/);
 r = await R.maybeDraw(r.id);
 assert.equal(r.status, "drawing");
 
-// with the coin live: holder snapshot happens at fill time — test on a second raffle
+// with the coin live + a fees wallet: 2 free holder spots, paid for by the treasury
 process.env.TOKEN_MINT = MINT;
+process.env.FEES_WALLET = FEES;
+feesBalance = 1e8; // 0.1 SOL: covers only 1 free spot at 0.1
+assert.match((await R.createRaffle({ title: "Pokémon pack", spots: 2, priceSol: 0.1, freeSpots: 2 })).error, /only pay for 1 free spot/);
+feesBalance = 5e8;
+await redis("DEL", `grail:bal:${FEES}`);
 let r2 = (await R.createRaffle({ title: "Pokémon pack", category: "pokemon", prizeUsd: 40, spots: 2, priceSol: 0.1 })).raffle;
+assert.equal(r2.freeSpots, 2, "2 free spots by default");
+assert.equal(r2.reservedLamports, 2e8);
+let ts = await R.treasuryStatus();
+assert.deepEqual([ts.balanceLamports, ts.reservedLamports, ts.availableLamports], [5e8, 2e8, 3e8]);
 const ha = await R.reserve({ id: r2.id, wallet: A, n: 1 }); pay("A".repeat(70), A, 1e8); await R.confirm({ nonce: ha.nonce, sig: "A".repeat(70), wallet: A });
 const hc = await R.reserve({ id: r2.id, wallet: C, n: 1 }); pay("C".repeat(70), C, 1e8); await R.confirm({ nonce: hc.nonce, sig: "C".repeat(70), wallet: C });
 r2 = await R.getRaffle(r2.id);
 assert.equal(r2.draw.holders.count, 2, "A and B hold ≥2M; C has 1M; the curve (80% of supply) is excluded");
+assert.equal((await R.getRaffle(r2.id)).draw.holders.hash, holdersHash([A, B].sort()));
 
 // time passes: block final → draw
 slot = 2000;
@@ -106,14 +130,17 @@ assert.deepEqual(r.draw.finalTickets, [A, A, B], "first raffle was frozen before
 assert.equal(r.draw.winner, winnerFrom("FutureBlockHash1042", r.id, [A, A, B]).winner);
 r2 = await R.maybeDraw(r2.id);
 assert.equal(r2.status, "drawn");
-assert.equal(r2.draw.finalTickets.length, 3, "2 paid + 1 free holder spot");
-assert.ok([A, B].includes(r2.draw.holderPick.wallet));
+assert.equal(r2.draw.finalTickets.length, 4, "2 paid + 2 free holder spots");
+assert.deepEqual([...r2.draw.freeWinners].sort(), [A, B].sort(), "without replacement: both holders get one");
+const proof2 = await R.proofOf(r2, true);
+assert.equal(proof2.holders.length, 2);
+assert.equal(proof2.holderRounds.length, 2);
 
 // public view + proof
 const pv = R.publicView(r, r.draw.winner);
 assert.equal(pv.youWon, true);
 assert.equal(pv.sold, 3);
-assert.equal(R.proofOf(r).tickets.length, 3);
+assert.equal((await R.proofOf(r)).tickets.length, 3);
 assert.equal(R.publicView(r, C).youWon, false);
 
 // claim
@@ -121,6 +148,11 @@ const loser = r.draw.winner === A ? B : A;
 assert.match((await R.claim({ id: r.id, wallet: loser, method: "polygon", value: "0x" + "a".repeat(40) })).error, /Only the winner/);
 assert.match((await R.claim({ id: r.id, wallet: r.draw.winner, method: "polygon", value: "nope" })).error, /Polygon/);
 assert.equal((await R.claim({ id: r.id, wallet: r.draw.winner, method: "polygon", value: "0x" + "a".repeat(40) })).ok, true);
+
+// prize bought → the free-spot reserve counts as spent
+assert.equal((await R.adminAction("bought", { id: r2.id, note: "Courtyard order 1" })).ok, true);
+ts = await R.treasuryStatus();
+assert.deepEqual([ts.reservedLamports, ts.spentLamports], [0, 2e8]);
 
 // ---- fill or refund: deadline passes with 1 of 3 sold ----
 delete process.env.TOKEN_MINT;

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="vault">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -12,21 +12,40 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
 <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <style>
-/* The display case: oxblood velvet, every raffle's spots shown as a strip of cloakroom tickets. */
+/* Colors come from one of three themes (data-theme on <html>); every rule below only uses the tokens. */
+:root, [data-theme="vault"] {
+  --velvet: #0c1630; --velvet-2: #13214a; --seam: #2b3d73;     /* page, raised surfaces, borders */
+  --paper: #f4efe2; --dim: #a7b1d0;                            /* text, secondary text */
+  --ticket: #f2c14e; --ink: #1b1404;                           /* buttons and their text */
+  --tk: #f2c14e; --tk-ink: #1b1404;                            /* open spots */
+  --sold: #26386b; --sold-ink: #7f8fc2;                        /* taken spots */
+  --gold: #ffe9a8; --gold-text: #ffe9a8; --logo-drop: #f2c14e; /* holder spots, winner */
+  --ok: #8fe3a7; --bad: #ff8f8f;
+  color-scheme: dark;
+}
+[data-theme="holo"] {
+  --velvet: #f2f0fa; --velvet-2: #ffffff; --seam: #dcd6ee;
+  --paper: #17122b; --dim: #5e5677;
+  --ticket: #17122b; --ink: #ffffff;
+  --tk: linear-gradient(115deg, #a6ecff 0%, #cdb4ff 35%, #ffb8e4 65%, #ffe8a3 100%); --tk-ink: #17122b;
+  --sold: #e3dff0; --sold-ink: #9a93b3;
+  --gold: #ffc93c; --gold-text: #7a4f00; --logo-drop: #b48cff;
+  --ok: #13804a; --bad: #c42b3b;
+  color-scheme: light;
+}
+[data-theme="cobalt"] {
+  --velvet: #1636d4; --velvet-2: #1e44ee; --seam: #4a6bff;
+  --paper: #ffffff; --dim: #cdd6ff;
+  --ticket: #ffe14d; --ink: #0d1a5c;
+  --tk: #ffe14d; --tk-ink: #0d1a5c;
+  --sold: #0f2a9e; --sold-ink: #6d86f2;
+  --gold: #ff8a5c; --gold-text: #ffe14d; --logo-drop: #ffe14d;
+  --ok: #a8ffc4; --bad: #ffc2c2;
+  color-scheme: dark;
+}
 :root {
-  --velvet: #2b0b14;      /* page */
-  --velvet-2: #3a1220;    /* raised surfaces */
-  --seam: #5a2333;        /* borders */
-  --paper: #f4e7df;       /* text */
-  --dim: #c9aeb3;         /* secondary text */
-  --ticket: #f5cf45;      /* free spots, buttons */
-  --ink: #22090f;         /* text on tickets */
-  --sold: #6e2233;        /* taken spots */
-  --gold: #ffd978;        /* holder spot, winner */
-  --ok: #8fe3a7; --bad: #ff8a8a;
   --font-display: "Dela Gothic One", "Arial Black", Impact, sans-serif;
   --font-body: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
-  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 [hidden] { display: none !important; }
@@ -38,11 +57,12 @@ a { color: var(--ticket); }
 .wrap { max-width: 1040px; margin: 0 auto; padding-inline: 16px; }
 
 header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 18px; flex-wrap: wrap; }
-.logo { font: 400 22px/1 var(--font-display); letter-spacing: .01em; color: var(--paper); text-decoration: none; }
+.logo { display: inline-flex; align-items: center; gap: 10px; font: 400 22px/1 var(--font-display); letter-spacing: .01em; color: var(--paper); text-decoration: none; }
+.logo svg { width: 34px; height: 34px; flex: none; }
 .wallet { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .chip { border: 1px solid var(--seam); border-radius: 999px; padding: 6px 12px; font-size: 14px; color: var(--dim); }
-.chip.ok { color: var(--ok); border-color: #2f6b45; }
-.chip.no { color: var(--bad); border-color: #7a2d36; }
+.chip.ok { color: var(--ok); border-color: currentColor; }
+.chip.no { color: var(--bad); border-color: currentColor; }
 .btn { border: 1px solid var(--seam); background: transparent; border-radius: 10px; padding: 10px 16px; font-weight: 600; cursor: pointer; }
 .btn:hover { border-color: var(--dim); }
 .btn.primary { background: var(--ticket); color: var(--ink); border-color: var(--ticket); }
@@ -58,7 +78,7 @@ header.top { display: flex; align-items: center; justify-content: space-between;
 .bar { height: 10px; background: var(--velvet-2); border-radius: 99px; overflow: hidden; }
 .bar i { display: block; height: 100%; background: var(--gold); border-radius: 99px; }
 
-.notice { border: 1px solid #7a2d36; color: var(--bad); border-radius: 12px; padding: 12px 14px; }
+.notice { border: 1px solid currentColor; color: var(--bad); border-radius: 12px; padding: 12px 14px; }
 h2 { font: 400 24px/1.1 var(--font-display); margin: 36px 0 14px; }
 
 .raffle { background: var(--velvet-2); border: 1px solid var(--seam); border-radius: 18px; padding: 16px; display: grid; grid-template-columns: 148px 1fr; gap: 18px; margin-bottom: 16px; }
@@ -74,19 +94,19 @@ h2 { font: 400 24px/1.1 var(--font-display); margin: 36px 0 14px; }
 
 /* the ticket strip */
 .strip { display: flex; flex-wrap: wrap; gap: 4px; }
-.tk { position: relative; width: 34px; height: 26px; border-radius: 4px; background: var(--ticket); color: var(--ink); font: 400 11px/26px var(--font-display); text-align: center; }
+.tk { position: relative; width: 34px; height: 26px; border-radius: 4px; background: var(--tk); color: var(--tk-ink); font: 400 11px/26px var(--font-display); text-align: center; }
 .tk::before, .tk::after { content: ""; position: absolute; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: var(--velvet-2); }
 .tk::before { left: -4px; } .tk::after { right: -4px; }
-.tk.sold { background: var(--sold); color: #b98591; }
-.tk.held { background: repeating-linear-gradient(-45deg, var(--sold) 0 4px, #8a3346 4px 8px); color: #e7c2ca; }
-.tk.mine { background: var(--paper); color: var(--ink); box-shadow: 0 0 0 2px var(--ticket); }
-.tk.star { background: var(--gold); }
+.tk.sold { background: var(--sold); color: var(--sold-ink); }
+.tk.held { background: repeating-linear-gradient(-45deg, var(--sold) 0 4px, var(--seam) 4px 8px); color: var(--sold-ink); }
+.tk.mine { background: var(--paper); color: var(--velvet); box-shadow: 0 0 0 2px var(--ticket); }
+.tk.star { background: var(--gold); color: var(--tk-ink); }
 .tk.win { background: var(--gold); box-shadow: 0 0 0 3px var(--paper); }
 .tk.new { animation: stamp .5s ease-out; }
 @keyframes stamp { 0% { transform: scale(1.6) rotate(-8deg); opacity: 0; } 70% { transform: scale(.95) rotate(1deg); opacity: 1; } 100% { transform: none; } }
 .meter { display: grid; gap: 6px; }
 .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 13px; color: var(--dim); }
-.legend span::before { content: ""; display: inline-block; width: 12px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; background: var(--ticket); }
+.legend span::before { content: ""; display: inline-block; width: 12px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: 0; background: var(--tk); }
 .legend .l-sold::before { background: var(--sold); } .legend .l-mine::before { background: var(--paper); } .legend .l-star::before { background: var(--gold); }
 
 .buy { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -98,7 +118,7 @@ h2 { font: 400 24px/1.1 var(--font-display); margin: 36px 0 14px; }
 .result p { margin: 0; }
 .result .winner { font-size: 18px; }
 .strip.closed .tk:not(.sold):not(.mine):not(.win):not(.star) { background: transparent; color: var(--dim); box-shadow: inset 0 0 0 1px var(--seam); }
-.result .winner b { color: var(--gold); }
+.result .winner b { color: var(--gold-text); }
 details { color: var(--dim); font-size: 14px; }
 details summary { cursor: pointer; color: var(--paper); }
 details dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; margin: 10px 0; }
@@ -124,7 +144,7 @@ label.agree input { margin-top: 3px; }
 
 footer { color: var(--dim); font-size: 13px; padding-block: 40px 56px; max-width: 70ch; }
 .empty { color: var(--dim); }
-.overlay { position: fixed; inset: 0; background: rgba(20,4,9,.8); display: grid; place-items: center; padding: 16px; z-index: 5; }
+.overlay { position: fixed; inset: 0; background: rgba(8,8,20,.75); display: grid; place-items: center; padding: 16px; z-index: 5; }
 .overlay .box { background: var(--velvet-2); border: 1px solid var(--seam); border-radius: 16px; padding: 18px; max-width: 420px; display: grid; gap: 12px; }
 
 @media (max-width: 640px) {
@@ -168,12 +188,12 @@ ol.steps small { display: block; font-weight: 400; color: var(--dim); font-size:
 .tablewrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 15px; }
 th { text-align: left; color: var(--dim); font-weight: 500; font-size: 13px; padding: 8px 10px; border-bottom: 1px solid var(--seam); white-space: nowrap; }
-td { padding: 10px; border-bottom: 1px solid rgba(90,35,51,.6); vertical-align: top; }
+td { padding: 10px; border-bottom: 1px solid var(--seam); vertical-align: top; }
 td a { color: var(--paper); }
 .addr { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; overflow-wrap: anywhere; }
 .stage { display: inline-block; border-radius: 99px; padding: 2px 10px; font-size: 13px; font-weight: 600; background: var(--velvet); border: 1px solid var(--seam); white-space: nowrap; }
 .stage.open { background: var(--ticket); color: var(--ink); border-color: var(--ticket); }
-.stage.drawn { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+.stage.drawn { background: var(--gold); color: var(--tk-ink); border-color: var(--gold); }
 dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; margin: 0; }
 dl.kv dt { color: var(--dim); }
 dl.kv dd { margin: 0; overflow-wrap: anywhere; }
@@ -183,13 +203,18 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 .checks li.ok::before { content: "✓"; color: var(--ok); }
 .checks li.bad::before { content: "✗"; color: var(--bad); }
 @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+@media (max-width: 640px) {
+  .topbar { width: 100%; }
+  nav.links { flex-wrap: nowrap; overflow-x: auto; margin-inline: -16px; padding-inline: 16px; width: calc(100% + 32px); scrollbar-width: none; }
+  nav.links a { white-space: nowrap; }
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header class="top">
     <div class="topbar">
-      <a class="logo" href="#/">GRAIL DROP</a>
+      <a class="logo" href="#/" aria-label="GRAIL DROP home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1.5c-1.6 2.4-3.6 5-3.6 7.1a3.6 3.6 0 0 0 7.2 0c0-2.1-2-4.7-3.6-7.1Z" fill="var(--logo-drop)"/><path d="M6.5 13.5h19c0 6-3.9 9.6-9.5 9.6s-9.5-3.6-9.5-9.6Z" fill="var(--paper)"/><rect x="14.6" y="22.6" width="2.8" height="4.4" fill="var(--paper)"/><rect x="9.5" y="26.6" width="13" height="3.4" rx="1.7" fill="var(--paper)"/><path d="M10.5 15.5c.4 2.6 2 4.4 4.3 5" stroke="var(--velvet)" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".55"/></svg><span>GRAIL DROP</span></a>
       <nav class="links" aria-label="Pages">
         <a href="#/" data-nav="home">Raffles</a>
         <a href="#/all" data-nav="all">All raffles</a>

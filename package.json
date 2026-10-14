@@ -1,0 +1,11 @@
+{
+  "name": "grail-drop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.js",
+    "test": "node test/grail.test.js"
+  },
+  "engines": { "node": ">=18" }
+}

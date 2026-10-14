@@ -1,9 +1,11 @@
 <!doctype html>
-<html lang="en" data-theme="vault">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>GRAIL DROP</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230c1630'/%3E%3Cpath d='M16 3c-1.4 2.1-3.1 4.3-3.1 6.1a3.1 3.1 0 0 0 6.2 0C19.1 7.3 17.4 5.1 16 3Z' fill='%23f2c14e'/%3E%3Cpath d='M8 13.5h16c0 5-3.3 8.1-8 8.1s-8-3.1-8-8.1Z' fill='%23f4efe2'/%3E%3Crect x='14.8' y='21.3' width='2.4' height='3.8' fill='%23f4efe2'/%3E%3Crect x='10.5' y='24.8' width='11' height='3' rx='1.5' fill='%23f4efe2'/%3E%3C/svg%3E">
+<meta name="theme-color" content="#0c1630">
 <meta name="description" content="Raffles for real watches, sneakers and Pokémon packs. Fill or refund, 2 free spots for holders, provably fair.">
 <meta property="og:title" content="GRAIL DROP">
 <meta property="og:description" content="50 spots. One Rolex. 2 free spots for holders. Drawn by a Solana block.">
@@ -12,8 +14,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
 <script src="https://unpkg.com/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
 <style>
-/* Colors come from one of three themes (data-theme on <html>); every rule below only uses the tokens. */
-:root, [data-theme="vault"] {
+/* Vault: a navy watch case with gold. Every rule below only uses these tokens. */
+:root {
   --velvet: #0c1630; --velvet-2: #13214a; --seam: #2b3d73;     /* page, raised surfaces, borders */
   --paper: #f4efe2; --dim: #a7b1d0;                            /* text, secondary text */
   --ticket: #f2c14e; --ink: #1b1404;                           /* buttons and their text */
@@ -21,26 +23,6 @@
   --sold: #26386b; --sold-ink: #7f8fc2;                        /* taken spots */
   --gold: #ffe9a8; --gold-text: #ffe9a8; --logo-drop: #f2c14e; /* holder spots, winner */
   --ok: #8fe3a7; --bad: #ff8f8f;
-  color-scheme: dark;
-}
-[data-theme="holo"] {
-  --velvet: #f2f0fa; --velvet-2: #ffffff; --seam: #dcd6ee;
-  --paper: #17122b; --dim: #5e5677;
-  --ticket: #17122b; --ink: #ffffff;
-  --tk: linear-gradient(115deg, #a6ecff 0%, #cdb4ff 35%, #ffb8e4 65%, #ffe8a3 100%); --tk-ink: #17122b;
-  --sold: #e3dff0; --sold-ink: #9a93b3;
-  --gold: #ffc93c; --gold-text: #7a4f00; --logo-drop: #b48cff;
-  --ok: #13804a; --bad: #c42b3b;
-  color-scheme: light;
-}
-[data-theme="cobalt"] {
-  --velvet: #1636d4; --velvet-2: #1e44ee; --seam: #4a6bff;
-  --paper: #ffffff; --dim: #cdd6ff;
-  --ticket: #ffe14d; --ink: #0d1a5c;
-  --tk: #ffe14d; --tk-ink: #0d1a5c;
-  --sold: #0f2a9e; --sold-ink: #6d86f2;
-  --gold: #ff8a5c; --gold-text: #ffe14d; --logo-drop: #ffe14d;
-  --ok: #a8ffc4; --bad: #ffc2c2;
   color-scheme: dark;
 }
 :root {

@@ -194,3 +194,11 @@ assert.equal(notAdmin.status, 403);
 const noAgree = await call(await import("../api/enter.js"), { method: "POST", url: "/api/enter?step=reserve", headers: { authorization: "Bearer " + "t".repeat(32) }, body: { id: r4.id, n: 1 } });
 assert.match(noAgree.body.error, /18\+/);
 console.log("grail OK");
+{ // the admin form's field names must be what the server reads
+  const html = (await import("node:fs")).readFileSync(new URL("../index.html", import.meta.url), "utf8");
+  const names = [...html.matchAll(/<form id="createForm">[\s\S]*?<\/form>/g)][0][0].match(/name="(\w+)"/g).map((x) => x.slice(6, -1));
+  for (const n of ["title", "category", "prizeUsd", "spots", "freeSpots", "priceSol", "maxPerWallet", "hours", "image", "link"]) assert.ok(names.includes(n), "form field " + n);
+  const { validateNew } = await import("../lib/raffles.js");
+  assert.equal(validateNew({ title: "x", slots: 5, priceSol: 0.1 }).raffle.spots, 5);
+  console.log("form OK");
+}

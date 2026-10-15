@@ -5,7 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.js",
-    "test": "node test/grail.test.js"
+    "test": "node test/grail.test.js && node test/vrf.test.js"
   },
-  "engines": { "node": ">=18" }
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@solana/web3.js": "1.95.3"
+  }
 }

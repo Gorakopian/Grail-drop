@@ -234,12 +234,22 @@
     return v;
   }
 
+  // The step where randomness arrives: ORAO VRF when it's on, otherwise a future Solana block.
+  function randomStep(r) {
+    const d = r.draw, v = d?.vrf;
+    if (v || (!d && state.vrf?.enabled)) {
+      const sub = r.status === "drawn" ? "Received from ORAO's independent nodes and checked on-chain." : v?.requested ? "Requested on Solana, waiting for ORAO's nodes to answer." : d ? "Asking ORAO for a random number." : null;
+      return ["Random number from ORAO VRF", sub];
+    }
+    return ["Deciding Solana slot", r.status === "drawn" ? `Slot ${d.slot}.` : d ? `Waiting for slot ${d.afterSlot} to be final.` : null];
+  }
+
   function steps(r) {
     const list = [
       ["Slots on sale", r.status === "open" ? `Fills or refunds by ${when(r.deadline)} (${countdown(r.deadline)} left).` : null],
       ["Sold out, paid slots locked", r.draw ? `Locked ${when(r.draw.frozenAt)}.` : null],
       ["Holder list locked", r.freeSpots ? (r.draw?.holders ? `${r.draw.holders.count} wallets with ${needText()} or more.` : null) : "No free slots in this raffle."],
-      ["Deciding Solana slot", r.status === "drawn" ? `Slot ${r.draw.slot}.` : r.draw ? `Waiting for slot ${r.draw.afterSlot} to be final.` : null],
+      randomStep(r),
       ["Free slots and winner drawn", r.status === "drawn" ? `Winner ${r.draw.winnerShort}.` : null],
       ["Prize bought on Courtyard", null],
       ["Prize sent to the winner", null],
@@ -303,7 +313,9 @@
       w.append(r.youWon ? "This one is yours. Tell us where to send it." : "Won by ", r.youWon ? "" : el("b", null, r.draw.winnerShort), r.youWon ? "" : ` with ${r.draw.index >= r.spots ? "a free holder slot" : "slot " + (r.draw.index + 1)}.`);
       res.append(w);
       if (r.youWon && !r.claimed) res.append(claimForm(r)); else if (r.youWon) res.append(el("p", "msg ok", r.delivered ? "Prize sent." : "Got your details. Your prize is on its way."));
-      const a = el("p"); a.style.margin = "0"; a.append(link("#/verify/" + r.id, "Check this draw yourself")); res.append(a);
+      const a = el("p"); a.style.margin = "0"; a.append(link("#/verify/" + r.id, "Check this draw yourself"));
+      if (r.draw.vrf?.account) a.append(" · ", solscan("account", r.draw.vrf.account, "The random number on Solana"));
+      res.append(a);
       v.push(res);
     }
 
@@ -396,7 +408,7 @@
   // verify: recompute free spots and the winner in the browser from the published lists
   function pageVerify(id) {
     const drawn = state.raffles.filter((r) => r.status === "drawn");
-    const v = [el("h1", null, "Verify a draw"), el("p", "lede", "Pick a finished raffle. Your browser downloads its locked lists and the deciding block hash, and redoes the whole draw itself.")];
+    const v = [el("h1", null, "Verify a draw"), el("p", "lede", "Pick a finished raffle. Your browser downloads its locked lists, reads the random number from Solana itself, and redoes the whole draw.")];
     const p = el("section", "panel");
     const row = el("div", "row");
     const sel = el("select"); sel.setAttribute("aria-label", "Raffle");
@@ -418,14 +430,29 @@
       const pr = await api(`/api/proof?id=${id}&holders=1`);
       const sha = async (s) => [...new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))].map((x) => x.toString(16).padStart(2, "0")).join("");
       const mod = (hex, n) => Number(BigInt("0x" + hex) % BigInt(n));
-      line(`Deciding block: slot ${pr.blockSlot}, hash ${pr.blockhash}. It was produced after the lists below were locked (target slot ${pr.afterSlot}).`, null);
+      const entropy = pr.entropy || pr.blockhash;
+      const paidHash = await sha(pr.paidTickets.join(","));
+      line(`Paid slots: ${pr.paidTickets.length}, hash matches what was locked.`, paidHash === pr.paidTicketsHash);
+      if (pr.source === "vrf") {
+        const seed = await sha(`slot-vrf:${pr.id}:${pr.paidTicketsHash}:${pr.holdersHash || "none"}`);
+        line(`VRF seed is the fingerprint of the locked lists: ${seed.slice(0, 16)}…`, seed === pr.vrf.seed);
+        const W = window.solanaWeb3;
+        const seedBytes = Uint8Array.from(seed.match(/../g).map((h) => parseInt(h, 16)));
+        const [acct] = W.PublicKey.findProgramAddressSync([new TextEncoder().encode("orao-vrf-randomness-request"), seedBytes], new W.PublicKey(pr.vrf.program));
+        line(`ORAO request account for that seed: ${short(acct.toBase58())}.`, acct.toBase58() === pr.vrf.account);
+        const onChain = await readVrfAccount(acct.toBase58()).catch(() => null);
+        if (!onChain) line("Couldn't reach Solana from your browser to read the account. Open it on Solscan below instead.", null);
+        else line(`Read from Solana: fulfilled by ORAO, random number ${onChain.randomness.slice(0, 16)}… matches the one used.`, onChain.fulfilled && onChain.seed === seed && onChain.randomness === entropy);
+      } else {
+        line(`Deciding block: slot ${pr.blockSlot}, hash ${pr.blockhash}. It was produced after the lists below were locked (target slot ${pr.afterSlot}).`, null);
+      }
       let tickets = [...pr.paidTickets];
       if (pr.holdersHash) {
         const hh = await sha(pr.holders.join(","));
         line(`Holder list: ${pr.holders.length} wallets, hash matches what was locked.`, hh === pr.holdersHash);
         let remaining = [...pr.holders], winners = [], good = true;
         for (let j = 0; j < pr.holderRounds.length; j++) {
-          const seed = await sha(`${pr.blockhash}:${pr.id}:holders:${hh}:${j}`);
+          const seed = await sha(`${entropy}:${pr.id}:holders:${hh}:${j}`);
           const cand = remaining[mod(seed, remaining.length)];
           const rec = pr.holderRounds[j];
           if (cand !== rec.owner) good = false;
@@ -438,11 +465,25 @@
       }
       const th = await sha(tickets.join(","));
       line(`All slots: ${tickets.length}, list hash matches.`, th === pr.ticketsHash);
-      const seed = await sha(`${pr.blockhash}:${pr.id}:${th}`);
+      const seed = await sha(`${entropy}:${pr.id}:${th}`);
       const idx = mod(seed, tickets.length);
       line(`Winner: seed mod ${tickets.length} = ${idx}, slot ${idx + 1}, wallet ${short(tickets[idx])}.`, seed === pr.seed && tickets[idx] === pr.winner);
-      const sb = el("li"); sb.append(solscan("block", pr.blockSlot, "See the block on Solscan")); out.append(sb);
+      const sb = el("li"), sp = el("span"); sb.append(sp);
+      if (pr.source === "vrf") { sp.append(solscan("account", pr.vrf.account, "See the random number on Solscan")); if (pr.vrf.requestSig) sp.append(" · ", solscan("tx", pr.vrf.requestSig, "the request")); }
+      else sp.append(solscan("block", pr.blockSlot, "See the block on Solscan"));
+      out.append(sb);
     } catch (e) { line(e.message, false); }
+  }
+
+  // Read an ORAO randomness account straight from a public Solana RPC (not through SLOT's server).
+  async function readVrfAccount(address) {
+    const res = await fetch("https://api.mainnet-beta.solana.com", { method: "POST", headers: { "content-type": "application/json" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getAccountInfo", params: [address, { encoding: "base64", commitment: "finalized" }] }) });
+    const v = (await res.json()).result?.value;
+    if (!v) return null;
+    const b = Uint8Array.from(atob(v.data[0]), (c) => c.charCodeAt(0));
+    const hex = (a) => [...a].map((x) => x.toString(16).padStart(2, "0")).join("");
+    return { fulfilled: b[8] === 1, seed: hex(b.subarray(41, 73)), randomness: hex(b.subarray(73, 137)) };
   }
 
   // ---------- buying ----------
@@ -503,12 +544,14 @@
     const admin = !!state.me?.admin && route().page === "home";
     $("admin").hidden = !admin;
     if (!admin) return;
+    renderVrfStatus();
     const list = $("adminList"); list.replaceChildren();
     for (const r of state.raffles) {
       const a = r.admin; if (!a) continue;
       const it = el("div", "item");
       it.append(el("b", null, `${r.title}: ${stageOf(r)}, ${r.sold} of ${r.spots} sold`));
       if (r.reservedLamports && ["open", "drawing", "drawn"].includes(r.status) && !a.bought) it.append(el("span", "msg", `${sol(r.reservedLamports)} SOL of fees reserved for its free slots.`));
+      if (r.draw?.vrf?.error && r.status === "drawing") it.append(el("span", "msg bad", `VRF: ${r.draw.vrf.error}. It retries on its own every 90 seconds.`));
       if (a.claim) it.append(el("span", null, `Winner ${short(r.draw?.winner)} wants it on ${a.claim.method}: ${a.claim.value}`));
       else if (r.status === "drawn") it.append(el("span", "msg", `Winner ${short(r.draw.winner)} hasn't said where to send it yet.`));
       const open = a.refunds.filter((f) => !f.paid);
@@ -524,6 +567,25 @@
       it.append(row);
       list.append(it);
     }
+  }
+
+  function renderVrfStatus() {
+    const box = $("vrfStatus"); if (!box) return;
+    const v = state.vrf || {};
+    box.replaceChildren();
+    if (!v.enabled) {
+      box.className = "msg";
+      box.append("Draws use a future Solana block hash. To switch to ORAO VRF, add VRF_PAYER_KEY in Vercel (a separate small wallet) and redeploy.");
+      return;
+    }
+    const fee = v.feeLamports, bal = v.balanceLamports;
+    const per = fee != null ? fee + 5000 : null; // request fee + network fee
+    const left = per && bal != null ? Math.floor(bal / per) : null;
+    const low = left != null && left < 3;
+    box.className = low ? "msg bad" : "msg";
+    box.append("Randomness: ORAO VRF. Payer ", solscan("account", v.payer, short(v.payer)),
+      bal != null ? `, ${sol(bal)} SOL` : "", fee != null ? `, ${sol(fee)} SOL per draw` : "",
+      left != null ? (low ? `. Only enough for ${left} draw(s), top it up.` : `. Enough for about ${left} draws.`) : ".");
   }
 
   async function payRefunds(r, open) {

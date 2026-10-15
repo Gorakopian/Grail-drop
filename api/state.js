@@ -6,6 +6,7 @@ import { setJSON, hasDatabase } from "../lib/redis.js";
 import { solUsd, holderStatus } from "../lib/solana.js";
 import { isAdmin, tokenMint, tokenSymbol, MIN_HOLD, HOLD_HOURS, treasury, blockedCountries, BRAND } from "../lib/config.js";
 import { send, query } from "../lib/http.js";
+import { vrfEnabled, vrfStatus } from "../lib/vrf.js";
 
 export default async function handler(req, res) {
   if (!hasDatabase() && process.env.VERCEL) return send(res, 503, { error: "The database isn't connected yet." });
@@ -30,6 +31,7 @@ export default async function handler(req, res) {
       solUsd: await solUsd(),
       treasury: await treasuryStatus(raffles).then((t) => ({ wallet: t.wallet, availableLamports: t.availableLamports, reservedLamports: t.reservedLamports, balanceLamports: t.balanceLamports })).catch(() => null),
       me: wallet ? { wallet, admin, gate: mint ? gate : { ok: true, reason: "coin_not_live" } } : null,
+      vrf: admin ? await vrfStatus().catch(() => ({ enabled: vrfEnabled() })) : { enabled: vrfEnabled() },
       blocked: country && blockedCountries().includes(country) ? country : null,
       raffles: raffles.map((r) => publicView(r, wallet, admin, r.id === detail)),
     });

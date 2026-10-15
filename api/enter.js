@@ -22,7 +22,7 @@ export default async function handler(req, res) {
         const g = await holderStatus(wallet, mint, MIN_HOLD, HOLD_HOURS);
         if (!g.ok) {
           const need = `${(MIN_HOLD / 1e6).toLocaleString("en")}M $${tokenSymbol()}`;
-          return send(res, 403, { error: g.reason === "not_long_enough" ? `You need to have held ${need} for ${HOLD_HOURS} hours.` : g.reason === "too_busy" ? "Your wallet has too many recent transactions to verify the hold. Try again later." : `You need to hold ${need} to buy spots.` });
+          return send(res, 403, { error: g.reason === "not_long_enough" ? `You need to have held ${need} for ${HOLD_HOURS} hours.` : g.reason === "too_busy" ? "Your wallet has too many recent transactions to verify the hold. Try again later." : `You need to hold ${need} to buy slots.` });
         }
       }
       const r = await reserve({ id: String(body.id || ""), wallet, n: body.n });

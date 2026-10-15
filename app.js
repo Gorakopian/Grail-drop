@@ -1,4 +1,4 @@
-// GRAIL DROP front end: pages are #/ (live raffles), #/r/<id>, #/all, #/treasury, #/verify[/<id>].
+// SLOT front end: pages are #/ (live raffles), #/r/<id>, #/all, #/treasury, #/verify[/<id>].
 (function () {
   const $ = (id) => document.getElementById(id);
   const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
@@ -108,14 +108,14 @@
       if (i === winIdx) cls += " win";
       if (fresh.has(i)) cls += " new";
       const t = el("span", cls, String(i + 1));
-      t.title = i === winIdx ? "Winning spot" : mine.has(i) ? "Your spot" : i < r.sold ? "Taken" : i < r.sold + r.reserved ? "Being paid for" : "Open";
+      t.title = i === winIdx ? "Winning slot" : mine.has(i) ? "Your slot" : i < r.sold ? "Taken" : i < r.sold + r.reserved ? "Being paid for" : "Open";
       box.append(t);
     }
     if (r.spots > show) box.append(el("span", "msg", `+${r.spots - show} more`));
     const free = /refund/.test(r.status) ? 0 : r.status === "drawn" ? r.draw.freeWinners.length : r.freeSpots;
     for (let k = 0; k < free; k++) {
       const t = el("span", "tk star" + (winIdx === r.spots + k ? " win" : ""), "★");
-      t.title = r.status === "drawn" ? `Free spot: ${short(r.draw.freeWinners[k])}` : "Free spot for a holder";
+      t.title = r.status === "drawn" ? `Free slot: ${short(r.draw.freeWinners[k])}` : "Free slot for a holder";
       box.append(t);
     }
     return box;
@@ -125,10 +125,10 @@
     if (r.status === "open") lg.append(el("span", null, "Open"));
     lg.append(el("span", "l-sold", "Taken"));
     if (r.mine) lg.append(el("span", "l-mine", "Yours"));
-    if (r.freeSpots && !/refund/.test(r.status)) lg.append(el("span", "l-star", "Free spot for a holder"));
+    if (r.freeSpots && !/refund/.test(r.status)) lg.append(el("span", "l-star", "Free slot for a holder"));
     return lg;
   }
-  const oddsText = (r) => `1 in ${r.spots + (r.status === "drawn" ? r.draw.freeWinners.length : r.freeSpots)} per spot`;
+  const oddsText = (r) => `1 in ${r.spots + (r.status === "drawn" ? r.draw.freeWinners.length : r.freeSpots)} per slot`;
 
   function pic(r) {
     const p = el("div", "pic");
@@ -145,7 +145,7 @@
     const val = el("span", "value"); val.append("Worth ", el("b", null, usd(r.prizeUsd)));
     head.append(h, val);
     const facts = el("div", "facts");
-    const f1 = el("span"); f1.append(el("b", null, `${r.sold} of ${r.spots}`), " paid spots sold"); facts.append(f1);
+    const f1 = el("span"); f1.append(el("b", null, `${r.sold} of ${r.spots}`), " paid slots sold"); facts.append(f1);
     if (r.freeSpots) facts.append(el("span", null, `+ ${r.freeSpots} free for holders`));
     if (r.status === "open") { const f2 = el("span"); f2.append("Fills or refunds in ", el("b", null, countdown(r.deadline))); facts.append(f2); }
     if (r.mine) { const f3 = el("span"); f3.append("You have ", el("b", null, String(r.mine))); facts.append(f3); }
@@ -160,7 +160,7 @@
 
   function resultLine(r) {
     const p = el("p", "msg");
-    if (r.status === "drawing") p.textContent = "Sold out. The winner is being drawn from the next Solana blocks…";
+    if (r.status === "drawing") p.textContent = "Sold out. The winner is being drawn from the next Solana slots…";
     else if (r.status === "drawn") { p.append(r.youWon ? el("b", null, "You won this. ") : "Won by ", r.youWon ? "" : el("b", null, r.draw.winnerShort), " ", link("#/r/" + r.id, "See the draw")); }
     else p.textContent = r.status === "refunded" ? "Didn't fill in time. Everyone was refunded." : "Didn't fill in time. Everyone gets their SOL back.";
     return p;
@@ -170,15 +170,15 @@
     const row = el("div", "buy");
     const left = r.spots - r.sold;
     const p = el("span", "price", `${sol(r.priceLamports)} SOL `);
-    if (state.solUsd) p.append(el("small", null, `about ${solUsd(r.priceLamports)} per spot`));
+    if (state.solUsd) p.append(el("small", null, `about ${solUsd(r.priceLamports)} per slot`));
     row.append(p);
     const can = Math.min(r.maxPerWallet - r.mine, left - r.reserved);
     if (left <= 0) { row.append(el("span", "msg", "Sold out, the draw is next.")); return row; }
-    if (!state.me) { const b = el("button", "btn primary", "Connect to buy a spot"); b.type = "button"; b.onclick = connect; row.append(b); return row; }
-    if (state.coin.live && !state.me.gate?.ok) { row.append(el("span", "msg", `Hold ${needText()} for ${state.coin.holdHours}h to buy spots.`)); return row; }
-    if (can <= 0) { row.append(el("span", "msg", r.mine >= r.maxPerWallet ? `You have the max ${r.maxPerWallet} spots.` : "All spots are being paid for. Check back in a few minutes.")); return row; }
+    if (!state.me) { const b = el("button", "btn primary", "Connect to buy a slot"); b.type = "button"; b.onclick = connect; row.append(b); return row; }
+    if (state.coin.live && !state.me.gate?.ok) { row.append(el("span", "msg", `Hold ${needText()} for ${state.coin.holdHours}h to buy slots.`)); return row; }
+    if (can <= 0) { row.append(el("span", "msg", r.mine >= r.maxPerWallet ? `You have the max ${r.maxPerWallet} slots.` : "All slots are being paid for. Check back in a few minutes.")); return row; }
     for (let n = 1; n <= Math.min(can, 2); n++) {
-      const b = el("button", "btn" + (n === 1 ? " primary" : ""), n === 1 ? "Buy 1 spot" : `Buy ${n} spots`);
+      const b = el("button", "btn" + (n === 1 ? " primary" : ""), n === 1 ? "Buy 1 slot" : `Buy ${n} slots`);
       b.type = "button"; b.disabled = busy || !!state.blocked;
       b.onclick = () => buy(r, n);
       row.append(b);
@@ -190,12 +190,12 @@
   function pageHome() {
     const v = [];
     const hero = el("section", "hero");
-    hero.append(el("h1", null, "One spot could be a Rolex."));
-    hero.append(el("p", null, `Raffles for real watches, sneakers and Pokémon packs, bought on Courtyard and sent to the winner. Every raffle fills or refunds, 2 spots go free to holders, and a Solana block picks the winner.`));
+    hero.append(el("h1", null, "Grab a slot. Win the grail."));
+    hero.append(el("p", null, `Raffles for real watches, sneakers and Pokémon cards, bought on Courtyard and sent to the winner. Every raffle fills or refunds, 2 slots go free to holders, and a Solana slot picks the winner.`));
     const t = state.treasury;
     if (t?.wallet) {
       const purse = el("div", "purse");
-      purse.append(el("b", null, `${sol(t.availableLamports)} SOL`), el("span", null, `in the treasury for new free spots${state.solUsd ? ` (${solUsd(t.availableLamports)})` : ""}`), link("#/treasury", "See the treasury"));
+      purse.append(el("b", null, `${sol(t.availableLamports)} SOL`), el("span", null, `in the treasury for new free slots${state.solUsd ? ` (${solUsd(t.availableLamports)})` : ""}`), link("#/treasury", "See the treasury"));
       hero.append(purse);
     }
     v.push(hero);
@@ -207,10 +207,10 @@
     v.push(el("h2", null, "How it works"));
     const rules = el("div", "rules");
     const rule = (h, p) => { const d = el("div"); d.append(el("h3", null, h), el("p", null, p)); rules.append(d); };
-    rule("Fill or refund", "The draw only happens when every paid spot is sold. If a raffle isn't full by its deadline, everyone gets their SOL back.");
-    rule("Holders only", state.coin.live ? `Hold ${needText()} for ${state.coin.holdHours} hours to buy spots. Max 2 spots per wallet per raffle.` : `Once $${state.coin.symbol} launches, you'll need to hold ${needText()} for ${state.coin.holdHours} hours to buy spots. Max 2 spots per wallet per raffle.`);
-    rule("2 free spots for holders", `When a raffle fills, 2 extra spots go to random holders of ${needText()} or more. Every holder has the same chance. The coin's trading fees pay for them.`);
-    rule("Provably fair", "Paid spots and the holder list are locked first, then the hash of a Solana block about 15 seconds later picks the winners. Anyone can check it.");
+    rule("Fill or refund", "The draw only happens when every paid slot is sold. If a raffle isn't full by its deadline, everyone gets their SOL back.");
+    rule("Holders only", state.coin.live ? `Hold ${needText()} for ${state.coin.holdHours} hours to buy slots. Max 2 slots per wallet per raffle.` : `Once $${state.coin.symbol} launches, you'll need to hold ${needText()} for ${state.coin.holdHours} hours to buy slots. Max 2 slots per wallet per raffle.`);
+    rule("2 free slots for holders", `When a raffle fills, 2 extra slots go to random holders of ${needText()} or more. Every holder has the same chance. The coin's trading fees pay for them.`);
+    rule("Provably fair", "Paid slots and the holder list are locked first, then the hash of a Solana slot about 15 seconds later picks the winners. Anyone can check it.");
     rule("Real prizes", "Prizes are bought on Courtyard after the raffle fills. You get the item there: keep it, ship it home, or sell it back.");
     v.push(rules);
     return v;
@@ -220,7 +220,7 @@
     const v = [el("h1", null, "All raffles"), el("p", "lede", `${state.raffles.length} raffle${state.raffles.length === 1 ? "" : "s"} so far. Open one to see where it stands and to check its draw.`)];
     const wrap = el("div", "panel tablewrap");
     const tbl = el("table");
-    const head = el("tr"); for (const h of ["Raffle", "Stage", "Paid spots sold", "Free spots", "Spot price", "Opened"]) head.append(el("th", null, h));
+    const head = el("tr"); for (const h of ["Raffle", "Stage", "Paid slots sold", "Free slots", "Slot price", "Opened"]) head.append(el("th", null, h));
     tbl.append(head);
     for (const r of state.raffles) {
       const tr = el("tr");
@@ -236,18 +236,18 @@
 
   function steps(r) {
     const list = [
-      ["Spots on sale", r.status === "open" ? `Fills or refunds by ${when(r.deadline)} (${countdown(r.deadline)} left).` : null],
-      ["Sold out, paid spots locked", r.draw ? `Locked ${when(r.draw.frozenAt)}.` : null],
-      ["Holder list locked", r.freeSpots ? (r.draw?.holders ? `${r.draw.holders.count} wallets with ${needText()} or more.` : null) : "No free spots in this raffle."],
-      ["Deciding Solana block", r.status === "drawn" ? `Slot ${r.draw.slot}.` : r.draw ? `Waiting for slot ${r.draw.afterSlot} to be final.` : null],
-      ["Free spots and winner drawn", r.status === "drawn" ? `Winner ${r.draw.winnerShort}.` : null],
+      ["Slots on sale", r.status === "open" ? `Fills or refunds by ${when(r.deadline)} (${countdown(r.deadline)} left).` : null],
+      ["Sold out, paid slots locked", r.draw ? `Locked ${when(r.draw.frozenAt)}.` : null],
+      ["Holder list locked", r.freeSpots ? (r.draw?.holders ? `${r.draw.holders.count} wallets with ${needText()} or more.` : null) : "No free slots in this raffle."],
+      ["Deciding Solana slot", r.status === "drawn" ? `Slot ${r.draw.slot}.` : r.draw ? `Waiting for slot ${r.draw.afterSlot} to be final.` : null],
+      ["Free slots and winner drawn", r.status === "drawn" ? `Winner ${r.draw.winnerShort}.` : null],
       ["Prize bought on Courtyard", null],
       ["Prize sent to the winner", null],
     ];
     const done = r.status === "drawn" ? 5 + (r.bought ? 1 : 0) + (r.delivered ? 1 : 0) : r.status === "drawing" ? 2 + (r.draw?.holders || !r.freeSpots ? 1 : 0) : 0;
     const ol = el("ol", "steps");
     if (/refund/.test(r.status)) {
-      const a = el("li", "done"); a.append(el("span", null, "Spots on sale"));
+      const a = el("li", "done"); a.append(el("span", null, "Slots on sale"));
       const b = el("li", r.status === "refunded" ? "done" : "now"); b.append(el("span", null, r.status === "refunded" ? "Everyone refunded" : "Refunding everyone"));
       b.lastChild.append(el("small", null, r.refundReason === "cancelled" ? "The raffle was cancelled." : "It didn't fill before the deadline."));
       ol.append(a, b); return ol;
@@ -265,19 +265,19 @@
     if (!r) return [el("h1", null, "Raffle not found"), el("p", "lede", "It may have been removed.")];
     const v = [];
     const h = el("h1", null, r.title); v.push(h);
-    const sub = el("p", "lede"); sub.append(stageChip(r), " ", `${r.sold} of ${r.spots} paid spots sold at ${sol(r.priceLamports)} SOL, plus ${r.freeSpots} free spot${r.freeSpots === 1 ? "" : "s"} for holders.`);
+    const sub = el("p", "lede"); sub.append(stageChip(r), " ", `${r.sold} of ${r.spots} paid slots sold at ${sol(r.priceLamports)} SOL, plus ${r.freeSpots} free slot${r.freeSpots === 1 ? "" : "s"} for holders.`);
     v.push(sub);
     const stats = el("div", "stats");
     const stat = (k, val, s) => { const d = el("div", "stat"); d.append(el("div", "k", k), el("div", "v", val)); if (s) d.append(el("div", "s", s)); stats.append(d); };
     stat("Prize", usd(r.prizeUsd), r.link ? "on Courtyard" : r.category);
-    stat("Paid spots", `${r.sold} / ${r.spots}`, `${r.spots - r.sold} left, max ${r.maxPerWallet} per wallet`);
-    stat("Free spots", String(r.freeSpots), r.freeSpots ? "for random holders" : "none in this raffle");
-    stat("Spot price", `${sol(r.priceLamports)} SOL`, state.solUsd ? `about ${solUsd(r.priceLamports)}` : "");
+    stat("Paid slots", `${r.sold} / ${r.spots}`, `${r.spots - r.sold} left, max ${r.maxPerWallet} per wallet`);
+    stat("Free slots", String(r.freeSpots), r.freeSpots ? "for random holders" : "none in this raffle");
+    stat("Slot price", `${sol(r.priceLamports)} SOL`, state.solUsd ? `about ${solUsd(r.priceLamports)}` : "");
     if (r.status === "open") stat("Closes in", countdown(r.deadline), when(r.deadline));
     v.push(stats);
 
     const spots = el("section", "panel");
-    spots.append(el("h2", null, "The spots"), strip(r), legend(r));
+    spots.append(el("h2", null, "The slots"), strip(r), legend(r));
     if (r.status === "open") spots.append(buyRow(r));
     const m = ui[r.id]?.msg; if (m) spots.append(el("p", "msg " + (m.kind || ""), m.text));
     if (r.myRefunds) for (const f of r.myRefunds) spots.append(el("p", "msg " + (f.paid ? "ok" : ""), f.paid ? `Refunded ${sol(f.lamports)} SOL to your wallet.` : `You'll get ${sol(f.lamports)} SOL back.`));
@@ -300,7 +300,7 @@
       const res = el("section", "panel");
       res.append(el("h2", null, r.youWon ? "You won" : "Winner"));
       const w = el("p", "result"); w.style.margin = "0";
-      w.append(r.youWon ? "This one is yours. Tell us where to send it." : "Won by ", r.youWon ? "" : el("b", null, r.draw.winnerShort), r.youWon ? "" : ` with ${r.draw.index >= r.spots ? "a free holder spot" : "spot " + (r.draw.index + 1)}.`);
+      w.append(r.youWon ? "This one is yours. Tell us where to send it." : "Won by ", r.youWon ? "" : el("b", null, r.draw.winnerShort), r.youWon ? "" : ` with ${r.draw.index >= r.spots ? "a free holder slot" : "slot " + (r.draw.index + 1)}.`);
       res.append(w);
       if (r.youWon && !r.claimed) res.append(claimForm(r)); else if (r.youWon) res.append(el("p", "msg ok", r.delivered ? "Prize sent." : "Got your details. Your prize is on its way."));
       const a = el("p"); a.style.margin = "0"; a.append(link("#/verify/" + r.id, "Check this draw yourself")); res.append(a);
@@ -308,19 +308,19 @@
     }
 
     const fs = el("section", "panel");
-    fs.append(el("h2", null, "Free spots"));
-    fs.append(el("p", "msg", `Free spots go to random wallets holding ${needText()} or more for ${state.coin.holdHours} hours. Every eligible wallet has the same chance and nobody gets two.`));
+    fs.append(el("h2", null, "Free slots"));
+    fs.append(el("p", "msg", `Free slots go to random wallets holding ${needText()} or more for ${state.coin.holdHours} hours. Every eligible wallet has the same chance and nobody gets two.`));
     if (r.status === "drawn" && r.draw.freeWinners.length) {
       const ul = el("ul");
-      r.draw.freeWinners.forEach((wlt, k) => { const li = el("li"); li.append(`Spot ★${k + 1}: `, solscan("account", wlt)); ul.append(li); });
+      r.draw.freeWinners.forEach((wlt, k) => { const li = el("li"); li.append(`Slot ★${k + 1}: `, solscan("account", wlt)); ul.append(li); });
       fs.append(ul);
-    } else fs.append(el("p", "msg", r.freeSpots ? "No winners yet. They're drawn when the raffle fills." : "This raffle has no free spots."));
+    } else fs.append(el("p", "msg", r.freeSpots ? "No winners yet. They're drawn when the raffle fills." : "This raffle has no free slots."));
     v.push(fs);
 
     const ps = el("section", "panel");
-    ps.append(el("h2", null, "Paid spots"), el("p", "msg", "In the order they were bought. This order is the spot numbering the draw uses."));
+    ps.append(el("h2", null, "Paid slots"), el("p", "msg", "In the order they were bought. This order is the slot numbering the draw uses."));
     const tw = el("div", "tablewrap"); const tbl = el("table");
-    const hr = el("tr"); for (const x of ["Spots", "Wallet", "Payment"]) hr.append(el("th", null, x)); tbl.append(hr);
+    const hr = el("tr"); for (const x of ["Slots", "Wallet", "Payment"]) hr.append(el("th", null, x)); tbl.append(hr);
     let n = 0;
     for (const e of r.entries || []) {
       const tr = el("tr");
@@ -353,21 +353,21 @@
 
   let treasuryCache = null;
   function pageTreasury() {
-    const v = [el("h1", null, "Treasury"), el("p", "lede", "The coin's trading fees land in the fees wallet. They pay for the free holder spots, and nothing else. Entry money pays for the prize itself.")];
+    const v = [el("h1", null, "Treasury"), el("p", "lede", "The coin's trading fees land in the fees wallet. They pay for the free holder slots, and nothing else. Entry money pays for the prize itself.")];
     const t = treasuryCache;
     if (!t) { v.push(el("p", "empty", "Reading the fees wallet from Solana…")); loadTreasury(); return v; }
-    if (!t.wallet) { v.push(el("p", "notice", "No fees wallet is set yet, so raffles run without free spots for now.")); return v; }
+    if (!t.wallet) { v.push(el("p", "notice", "No fees wallet is set yet, so raffles run without free slots for now.")); return v; }
     const stats = el("div", "stats");
     const stat = (k, l, s) => { const d = el("div", "stat"); d.append(el("div", "k", k), el("div", "v", `${sol(l)} SOL`), el("div", "s", (t.solUsd ? `about ${usd(sol(l) * t.solUsd)}. ` : "") + s)); stats.append(d); };
-    stat("Available for new free spots", t.availableLamports, "Can pay for free spots of raffles that don't exist yet.");
-    stat("Reserved for free spots", t.reservedLamports, "Set aside for raffles that are running.");
+    stat("Available for new free slots", t.availableLamports, "Can pay for free slots of raffles that don't exist yet.");
+    stat("Reserved for free slots", t.reservedLamports, "Set aside for raffles that are running.");
     stat("In the fees wallet", t.balanceLamports ?? 0, "The whole balance, read from Solana.");
-    stat("Spent on prizes so far", t.spentLamports, "Free-spot money used once a prize was bought.");
+    stat("Spent on prizes so far", t.spentLamports, "Free-slot money used once a prize was bought.");
     v.push(stats);
     const res = el("section", "panel"); res.append(el("h2", null, "What's reserved"));
     if (t.reserving.length) {
       const tw = el("div", "tablewrap"); const tbl = el("table");
-      const hr = el("tr"); for (const x of ["Raffle", "Free spots", "Reserved"]) hr.append(el("th", null, x)); tbl.append(hr);
+      const hr = el("tr"); for (const x of ["Raffle", "Free slots", "Reserved"]) hr.append(el("th", null, x)); tbl.append(hr);
       for (const x of t.reserving) { const tr = el("tr"); const c = el("td"); c.append(link("#/r/" + x.id, x.title)); tr.append(c, el("td", null, String(x.freeSpots)), el("td", null, `${sol(x.lamports)} SOL`)); tbl.append(tr); }
       tw.append(tbl); res.append(tw);
     } else res.append(el("p", "msg", "Nothing reserved right now."));
@@ -375,8 +375,8 @@
     const how = el("section", "panel"); how.append(el("h2", null, "How the money is used"));
     const ul = el("ul");
     for (const x of [
-      "A raffle only gets free spots when the fees wallet can pay for all of them: free spots × spot price is reserved when the raffle opens.",
-      "If there aren't enough fees, the raffle still runs, just with fewer or no free spots. Fees never decide whether a raffle happens.",
+      "A raffle only gets free slots when the fees wallet can pay for all of them: free slots × slot price is reserved when the raffle opens.",
+      "If there aren't enough fees, the raffle still runs, just with fewer or no free slots. Fees never decide whether a raffle happens.",
       "When a raffle fills, the reserved money joins the entry money to buy the prize. If it doesn't fill, the reserve is released and the buyers are refunded.",
     ]) ul.append(el("li", null, x));
     how.append(ul); v.push(how);
@@ -384,7 +384,7 @@
     const kv = el("dl", "kv");
     const add = (k, val, s) => { kv.append(el("dt", null, k)); const dd = el("dd"); dd.append(val); if (s) dd.append(el("small", "msg", " " + s)); kv.append(dd); };
     add("Fees wallet", solscan("account", t.wallet, t.wallet), "receives the coin's trading fees");
-    add("Entry wallet", solscan("account", t.entryWallet, t.entryWallet), "receives spot payments, pays refunds and prizes");
+    add("Entry wallet", solscan("account", t.entryWallet, t.entryWallet), "receives slot payments, pays refunds and prizes");
     who.append(kv, el("p", "msg", "Balances are read from Solana (finalized) every 30 seconds."));
     v.push(who);
     return v;
@@ -433,14 +433,14 @@
           remaining = remaining.filter((o) => o !== cand);
         }
         const skipped = pr.holderRounds.filter((x) => !x.ok).length;
-        line(`Free spots: ${winners.map(short).join(" and ") || "none"}${skipped ? ` (${skipped} picked wallet${skipped === 1 ? "" : "s"} skipped for not holding long enough)` : ""}.`, good && winners.join() === pr.freeWinners.join());
+        line(`Free slots: ${winners.map(short).join(" and ") || "none"}${skipped ? ` (${skipped} picked wallet${skipped === 1 ? "" : "s"} skipped for not holding long enough)` : ""}.`, good && winners.join() === pr.freeWinners.join());
         tickets.push(...winners);
       }
       const th = await sha(tickets.join(","));
-      line(`All spots: ${tickets.length}, list hash matches.`, th === pr.ticketsHash);
+      line(`All slots: ${tickets.length}, list hash matches.`, th === pr.ticketsHash);
       const seed = await sha(`${pr.blockhash}:${pr.id}:${th}`);
       const idx = mod(seed, tickets.length);
-      line(`Winner: seed mod ${tickets.length} = ${idx}, spot ${idx + 1}, wallet ${short(tickets[idx])}.`, seed === pr.seed && tickets[idx] === pr.winner);
+      line(`Winner: seed mod ${tickets.length} = ${idx}, slot ${idx + 1}, wallet ${short(tickets[idx])}.`, seed === pr.seed && tickets[idx] === pr.winner);
       const sb = el("li"); sb.append(solscan("block", pr.blockSlot, "See the block on Solscan")); out.append(sb);
     } catch (e) { line(e.message, false); }
   }
@@ -466,7 +466,7 @@
     if (!p || !window.solanaWeb3) return say("Open this page in your Solana wallet to pay.", "bad");
     busy = true;
     try {
-      say("Holding your spot for 5 minutes…");
+      say("Holding your slot for 5 minutes…");
       const hold = await api("/api/enter?step=reserve", { id: r.id, n, agree: true });
       say(`Approve ${sol(hold.lamports)} SOL in your wallet…`);
       const { Transaction, PublicKey } = window.solanaWeb3;
@@ -486,14 +486,14 @@
         const before = new Set(r.mySpots || []);
         await load();
         const now = state.raffles.find((x) => x.id === r.id);
-        ui[r.id] = { fresh: (now?.mySpots || []).filter((i) => !before.has(i)), msg: { text: n === 1 ? "You're in. Good luck." : `You're in with ${n} spots. Good luck.`, kind: "ok" } };
+        ui[r.id] = { fresh: (now?.mySpots || []).filter((i) => !before.has(i)), msg: { text: n === 1 ? "You're in. Good luck." : `You're in with ${n} slots. Good luck.`, kind: "ok" } };
         paint();
         setTimeout(() => { if (ui[r.id]) ui[r.id].fresh = null; }, 900);
       } else if (res.status === "refund") say(res.reason, "bad");
       else say(`Your payment is still confirming. It will show up here; keep this link: https://solscan.io/tx/${sig}`, "bad");
     } catch (e) {
       busy = false;
-      say(/reject|cancel/i.test(e?.message) ? "Payment cancelled. Your spot is released in 5 minutes." : e.message, "bad");
+      say(/reject|cancel/i.test(e?.message) ? "Payment cancelled. Your slot is released in 5 minutes." : e.message, "bad");
       load();
     }
   }
@@ -508,7 +508,7 @@
       const a = r.admin; if (!a) continue;
       const it = el("div", "item");
       it.append(el("b", null, `${r.title}: ${stageOf(r)}, ${r.sold} of ${r.spots} sold`));
-      if (r.reservedLamports && ["open", "drawing", "drawn"].includes(r.status) && !a.bought) it.append(el("span", "msg", `${sol(r.reservedLamports)} SOL of fees reserved for its free spots.`));
+      if (r.reservedLamports && ["open", "drawing", "drawn"].includes(r.status) && !a.bought) it.append(el("span", "msg", `${sol(r.reservedLamports)} SOL of fees reserved for its free slots.`));
       if (a.claim) it.append(el("span", null, `Winner ${short(r.draw?.winner)} wants it on ${a.claim.method}: ${a.claim.value}`));
       else if (r.status === "drawn") it.append(el("span", "msg", `Winner ${short(r.draw.winner)} hasn't said where to send it yet.`));
       const open = a.refunds.filter((f) => !f.paid);
@@ -551,7 +551,7 @@
     const prize = Number(f.prizeUsd.value), spots = Number(f.spots.value), free = Number(f.freeSpots.value) || 0;
     if (prize > 0 && spots > 1 && state?.solUsd) {
       const s = (prize * 1.1) / spots / state.solUsd;
-      $("suggest").textContent = `Entries cover the prize plus 10% at ${s.toFixed(3)} SOL per spot (about ${usd(s * state.solUsd)}). ${free ? `${free} free spot${free === 1 ? "" : "s"} will reserve ${(s * free).toFixed(3)} SOL of fees.` : ""}`;
+      $("suggest").textContent = `Entries cover the prize plus 10% at ${s.toFixed(3)} SOL per slot (about ${usd(s * state.solUsd)}). ${free ? `${free} free slot${free === 1 ? "" : "s"} will reserve ${(s * free).toFixed(3)} SOL of fees.` : ""}`;
     } else $("suggest").textContent = "";
   };
   $("createForm").onsubmit = async (e) => {

@@ -1,4 +1,4 @@
-# GRAIL DROP
+# SLOT
 
 Raffles for real collectibles (watches, sneakers, Pokémon packs) bought on Courtyard, for memecoin holders.
 

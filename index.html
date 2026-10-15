@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>GRAIL DROP</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230c1630'/%3E%3Cpath d='M16 3c-1.4 2.1-3.1 4.3-3.1 6.1a3.1 3.1 0 0 0 6.2 0C19.1 7.3 17.4 5.1 16 3Z' fill='%23f2c14e'/%3E%3Cpath d='M8 13.5h16c0 5-3.3 8.1-8 8.1s-8-3.1-8-8.1Z' fill='%23f4efe2'/%3E%3Crect x='14.8' y='21.3' width='2.4' height='3.8' fill='%23f4efe2'/%3E%3Crect x='10.5' y='24.8' width='11' height='3' rx='1.5' fill='%23f4efe2'/%3E%3C/svg%3E">
+<title>SLOT</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230c1630'/%3E%3Crect x='3' y='18' width='26' height='10' rx='5' fill='%23f4efe2'/%3E%3Crect x='8' y='22' width='16' height='2.4' rx='1.2' fill='%230c1630'/%3E%3Ccircle cx='16' cy='11.5' r='7.5' fill='%23f2c14e'/%3E%3C/svg%3E">
 <meta name="theme-color" content="#0c1630">
-<meta name="description" content="Raffles for real watches, sneakers and Pokémon packs. Fill or refund, 2 free spots for holders, provably fair.">
-<meta property="og:title" content="GRAIL DROP">
-<meta property="og:description" content="50 spots. One Rolex. 2 free spots for holders. Drawn by a Solana block.">
+<meta name="description" content="Raffles for real watches, sneakers and Pokémon cards. Grab a slot, fill or refund, 2 free slots for holders, drawn by a Solana slot.">
+<meta property="og:title" content="SLOT">
+<meta property="og:description" content="Grab a slot. Win the grail. Drawn by a Solana slot.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Schibsted+Grotesk:wght@400;500;600;700&display=swap">
@@ -196,7 +196,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
 <div class="wrap">
   <header class="top">
     <div class="topbar">
-      <a class="logo" href="#/" aria-label="GRAIL DROP home"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 1.5c-1.6 2.4-3.6 5-3.6 7.1a3.6 3.6 0 0 0 7.2 0c0-2.1-2-4.7-3.6-7.1Z" fill="var(--logo-drop)"/><path d="M6.5 13.5h19c0 6-3.9 9.6-9.5 9.6s-9.5-3.6-9.5-9.6Z" fill="var(--paper)"/><rect x="14.6" y="22.6" width="2.8" height="4.4" fill="var(--paper)"/><rect x="9.5" y="26.6" width="13" height="3.4" rx="1.7" fill="var(--paper)"/><path d="M10.5 15.5c.4 2.6 2 4.4 4.3 5" stroke="var(--velvet)" stroke-width="1.4" stroke-linecap="round" fill="none" opacity=".55"/></svg><span>GRAIL DROP</span></a>
+      <a class="logo" href="#/" aria-label="SLOT home"><svg viewBox="0 0 32 32" aria-hidden="true"><rect x="2" y="18" width="28" height="11" rx="5.5" fill="var(--paper)"/><rect x="7" y="22.2" width="18" height="2.6" rx="1.3" fill="var(--velvet)"/><circle cx="16" cy="11" r="8" fill="var(--logo-drop)"/><circle cx="16" cy="11" r="5.2" fill="none" stroke="var(--velvet)" stroke-width="1.2" opacity=".45"/><path d="M16 7.6v6.8M13.8 9.4h3.4a1.6 1.6 0 0 1 0 3.2h-2.4" stroke="var(--velvet)" stroke-width="1.3" stroke-linecap="round" fill="none" opacity=".6"/></svg><span>SLOT</span></a>
       <nav class="links" aria-label="Pages">
         <a href="#/" data-nav="home">Raffles</a>
         <a href="#/all" data-nav="all">All raffles</a>
@@ -219,9 +219,9 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
         <label>Title<input type="text" name="title" required placeholder="Rolex watch box"></label>
         <label>Category<select name="category"><option value="watch">Watch</option><option value="sneakers">Sneakers</option><option value="pokemon">Pokémon</option><option value="cards">Cards</option><option value="other">Other</option></select></label>
         <label>Prize value ($)<input type="number" name="prizeUsd" min="1" required></label>
-        <label>Paid spots<input type="number" name="spots" min="2" max="1000" value="50" required></label>
-        <label>Free holder spots<input type="number" name="freeSpots" min="0" max="5" value="2"></label>
-        <label>Price per spot (SOL)<input type="number" name="priceSol" step="0.001" min="0.001" required></label>
+        <label>Paid slots<input type="number" name="slots" min="2" max="1000" value="50" required></label>
+        <label>Free holder slots<input type="number" name="freeSpots" min="0" max="5" value="2"></label>
+        <label>Price per slot (SOL)<input type="number" name="priceSol" step="0.001" min="0.001" required></label>
         <label>Max per wallet<input type="number" name="maxPerWallet" min="1" value="2"></label>
         <label>Open for (hours)<input type="number" name="hours" min="1" value="72"></label>
       </div>
@@ -236,7 +236,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
   </section>
 
   <footer>
-    18+ only. Raffles aren't available where they're prohibited, so check your local rules before you play. Spot payments go to the entry wallet; free spots are paid from the fees wallet; prizes are bought on Courtyard after a raffle fills. Nothing here is financial advice.
+    18+ only. Raffles aren't available where they're prohibited, so check your local rules before you play. Slot payments go to the entry wallet; free slots are paid from the fees wallet; prizes are bought on Courtyard after a raffle fills. Nothing here is financial advice.
   </footer>
 </div>
 

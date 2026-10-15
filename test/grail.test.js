@@ -107,7 +107,7 @@ assert.equal(r.status, "drawing");
 process.env.TOKEN_MINT = MINT;
 process.env.FEES_WALLET = FEES;
 feesBalance = 1e8; // 0.1 SOL: covers only 1 free spot at 0.1
-assert.match((await R.createRaffle({ title: "Pokémon pack", spots: 2, priceSol: 0.1, freeSpots: 2 })).error, /only pay for 1 free spot/);
+assert.match((await R.createRaffle({ title: "Pokémon pack", spots: 2, priceSol: 0.1, freeSpots: 2 })).error, /only pay for 1 free slot/);
 feesBalance = 5e8;
 await redis("DEL", `grail:bal:${FEES}`);
 let r2 = (await R.createRaffle({ title: "Pokémon pack", category: "pokemon", prizeUsd: 40, spots: 2, priceSol: 0.1 })).raffle;

@@ -2,7 +2,7 @@
 // Also keeps things moving: expired reservations, deadlines, and draws whose block is final.
 import { sessionAddress } from "../lib/auth.js";
 import { listRaffles, settle, maybeDraw, publicView, treasuryStatus } from "../lib/raffles.js";
-import { setJSON, hasDatabase } from "../lib/redis.js";
+import { setJSON, hasDatabase, databaseInfo } from "../lib/redis.js";
 import { solUsd, holderStatus } from "../lib/solana.js";
 import { isAdmin, tokenMint, tokenSymbol, MIN_HOLD, HOLD_HOURS, treasury, blockedCountries, BRAND } from "../lib/config.js";
 import { send, query } from "../lib/http.js";
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     });
   } catch (e) {
     console.error("state failed", e);
-    if (/max requests limit/i.test(String(e?.message))) return send(res, 503, { error: "The database is over its monthly limit." });
+    if (/max requests limit/i.test(String(e?.message))) return send(res, 503, { error: "The database is over its monthly limit.", db: databaseInfo() });
     return send(res, 500, { error: "Something went wrong loading the raffles." });
   }
 }

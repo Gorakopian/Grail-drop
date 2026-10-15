@@ -37,6 +37,7 @@ export default async function handler(req, res) {
     });
   } catch (e) {
     console.error("state failed", e);
-    return send(res, 500, { error: "Something went wrong loading the raffles.", debug: String(e?.stack || e).slice(0, 400) });
+    if (/max requests limit/i.test(String(e?.message))) return send(res, 503, { error: "The database is over its monthly limit." });
+    return send(res, 500, { error: "Something went wrong loading the raffles." });
   }
 }

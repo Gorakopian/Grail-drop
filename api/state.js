@@ -36,6 +36,7 @@ export default async function handler(req, res) {
       raffles: raffles.map((r) => publicView(r, wallet, admin, r.id === detail)),
     });
   } catch (e) {
-    return send(res, 500, { error: "Something went wrong loading the raffles." });
+    console.error("state failed", e);
+    return send(res, 500, { error: "Something went wrong loading the raffles.", debug: String(e?.stack || e).slice(0, 400) });
   }
 }

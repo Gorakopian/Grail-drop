@@ -14,8 +14,19 @@ const { winnerFrom, ticketsOf } = await import("../lib/draw.js");
 const seed = V.vrfSeed("r1", "aa", null);
 assert.equal(seed.toString("hex"), createHash("sha256").update("slot-vrf:r1:aa:none").digest("hex"));
 assert.equal(V.VRF_PROGRAM.toBase58(), "VRFzZoJdhFWL8rkvu87LpKM3RbcVezpMEc6X5GVDr7y");
-const [expectNs] = PublicKey.findProgramAddressSync([Buffer.from("orao-vrf-network-configuration")], V.VRF_PROGRAM);
+const [expectNs] = PublicKey.findProgramAddressSync([Buffer.from("orao-vrf-network-configuration")], new PublicKey(V.VRF_PROGRAM.toBase58()));
 assert.equal(V.networkStateAddress().toBase58(), expectNs.toBase58());
+// our own PDA / curve / key code must match web3.js exactly
+for (let i = 0; i < 40; i++) {
+  const s = createHash("sha256").update("pda" + i).digest();
+  assert.equal(V.requestAddress(s).toBase58(), PublicKey.findProgramAddressSync([Buffer.from("orao-vrf-randomness-request"), s], new PublicKey(V.VRF_PROGRAM.toBase58()))[0].toBase58());
+  assert.equal(V.isOnCurve(s), PublicKey.isOnCurve(s), "curve check " + i);
+  assert.equal(V.base58Encode(s), new PublicKey(s).toBase58());
+}
+assert.equal(V.SYSTEM_PROGRAM.toBase58(), "11111111111111111111111111111111");
+assert.equal(V.vrfPayer().publicKey.toBase58(), payer.publicKey.toBase58());
+assert.equal(V.vrfPayer({ VRF_PAYER_KEY: V.base58Encode(payer.secretKey) }).publicKey.toBase58(), payer.publicKey.toBase58(), "base58 secret works too");
+assert.equal(V.vrfPayer({ VRF_PAYER_KEY: "nonsense" }), null);
 
 const TREASURY = Keypair.generate().publicKey, AUTH = Keypair.generate().publicKey, A1 = Keypair.generate().publicKey;
 const u64 = (n) => { const b = Buffer.alloc(8); b.writeBigUInt64LE(BigInt(n)); return b; };
@@ -73,6 +84,13 @@ const expectSeed = V.vrfSeed(r.id, r.draw.ticketsHash, null);
 assert.equal(r.draw.vrf.seed, expectSeed.toString("hex"), "seed = fingerprint of the locked slots");
 assert.ok(sent[0].verifySignatures(), "request is signed by the VRF payer");
 assert.equal(sent[0].feePayer.toBase58(), payer.publicKey.toBase58());
+{ // the decoded instruction is exactly the ORAO request
+  const got = sent[0].instructions[0];
+  assert.equal(got.programId.toBase58(), V.VRF_PROGRAM.toBase58());
+  assert.deepEqual(got.keys.map((k) => [k.pubkey.toBase58(), k.isSigner, k.isWritable]),
+    [[payer.publicKey.toBase58(), true, true], [V.networkStateAddress().toBase58(), false, true], [TREASURY.toBase58(), false, true], [r.draw.vrf.account, false, true], ["11111111111111111111111111111111", false, false]]);
+  assert.equal(sent[0].recentBlockhash, "GHtXQBsoZHVnNFa9YevAzFr17DJjgHXk3ycTKD5xD3Zi");
+}
 // still pending → no new request, still drawing
 r = await R.maybeDraw(r.id);
 assert.deepEqual([r.status, sent.length], ["drawing", 1]);

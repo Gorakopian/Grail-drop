@@ -10,6 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - run: curl -fsS --max-time 70 "${SITE_URL:-https://graildrop.vercel.app}/api/tick" || true
+      - run: |
+          out=$(curl -sS --max-time 70 "${SITE_URL:-https://graildrop.vercel.app}/api/tick" || echo '{"error":"unreachable"}')
+          echo "::notice title=tick::$(echo "$out" | head -c 900)"
         env:
           SITE_URL: ${{ vars.SITE_URL }}

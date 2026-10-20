@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.js",
-    "test": "node test/grail.test.js && node test/vrf.test.js"
+    "test": "node test/grail.test.js && node test/vrf.test.js && node test/auto.test.js"
   },
   "engines": {
     "node": ">=18"

@@ -7,6 +7,7 @@
   const LAMPORTS = 1e9;
   const sol = (l) => +(Number(l) / LAMPORTS).toFixed(4);
   const usd = (n) => "$" + Math.round(n).toLocaleString("en-US");
+  const usd2 = (n) => "$" + Number(n).toFixed(2);
   const solUsd = (l) => (state?.solUsd ? usd(sol(l) * state.solUsd) : "");
   const when = (ts) => new Date(ts * 1000).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
   const ICON = { watch: "⌚", sneakers: "👟", pokemon: "🃏", cards: "🃏", other: "🎁" };
@@ -251,8 +252,13 @@
       ["Holder list locked", r.freeSpots ? (r.draw?.holders ? `${r.draw.holders.count} wallets with ${needText()} or more.` : null) : "No free slots in this raffle."],
       randomStep(r),
       ["Free slots and winner drawn", r.status === "drawn" ? `Winner ${r.draw.winnerShort}.` : null],
-      ["Prize bought on Courtyard", null],
-      ["Prize sent to the winner", null],
+      ...(r.prize?.kind === "packs" ? [
+        [`${r.prize.count}× ${r.prize.name} bought and opened`, r.auto?.status === "done" ? "Automatically, at Collector Crypt." : r.status === "drawn" ? `Buying… ${r.auto?.bought || 0} of ${r.prize.count}` : "Happens by itself right after the draw."],
+        ["Card sent to the winner's wallet", r.auto?.status === "done" ? "Straight from Collector Crypt to the winner." : null],
+      ] : [
+        ["Prize bought on Courtyard", null],
+        ["Prize sent to the winner", null],
+      ]),
     ];
     const done = r.status === "drawn" ? 5 + (r.bought ? 1 : 0) + (r.delivered ? 1 : 0) : r.status === "drawing" ? 2 + (r.draw?.holders || !r.freeSpots ? 1 : 0) : 0;
     const ol = el("ol", "steps");
@@ -279,10 +285,11 @@
     v.push(sub);
     const stats = el("div", "stats");
     const stat = (k, val, s) => { const d = el("div", "stat"); d.append(el("div", "k", k), el("div", "v", val)); if (s) d.append(el("div", "s", s)); stats.append(d); };
-    stat("Prize", usd(r.prizeUsd), r.link ? "on Courtyard" : r.category);
+    stat("Prize", usd(r.prizeUsd), r.prize?.kind === "packs" ? `${r.prize.count}× ${r.prize.name}` : r.link ? "on Courtyard" : r.category);
     stat("Paid slots", `${r.sold} / ${r.spots}`, `${r.spots - r.sold} left, max ${r.maxPerWallet} per wallet`);
     stat("Free slots", String(r.freeSpots), r.freeSpots ? "for random holders" : "none in this raffle");
-    stat("Slot price", `${sol(r.priceLamports)} SOL`, state.solUsd ? `about ${solUsd(r.priceLamports)}` : "");
+    if (r.priceUsd) stat("Slot price", usd2(r.priceUsd), r.priceLamports ? `${sol(r.priceLamports)} SOL right now` : "paid in SOL");
+    else stat("Slot price", `${sol(r.priceLamports)} SOL`, state.solUsd ? `about ${solUsd(r.priceLamports)}` : "");
     if (r.status === "open") stat("Closes in", countdown(r.deadline), when(r.deadline));
     v.push(stats);
 
@@ -301,8 +308,12 @@
     const add = (k, val) => { kv.append(el("dt", null, k)); const dd = el("dd"); dd.append(val); kv.append(dd); };
     add("Worth", usd(r.prizeUsd));
     if (r.link) add("Listing", link(r.link, "Open on Courtyard", true));
+    if (r.prize?.kind === "packs") {
+      add("Packs", `${r.prize.count}× ${r.prize.name} at $${r.prize.unitUsd} each, from Collector Crypt`);
+      add("How you get it", "Opened automatically right after the draw. The card lands in the winner's wallet as an NFT backed by the real graded card: keep it, sell it, or have the physical card shipped from Collector Crypt.");
+    }
     add("Opened", when(r.createdAt));
-    add("Paid to", solscan("account", state.entryWallet));
+    add("Paid to", solscan("account", r.payTo || state.entryWallet));
     info.append(kv);
     cols.append(prog, info); v.push(cols);
 
@@ -310,9 +321,12 @@
       const res = el("section", "panel");
       res.append(el("h2", null, r.youWon ? "You won" : "Winner"));
       const w = el("p", "result"); w.style.margin = "0";
-      w.append(r.youWon ? "This one is yours. Tell us where to send it." : "Won by ", r.youWon ? "" : el("b", null, r.draw.winnerShort), r.youWon ? "" : ` with ${r.draw.index >= r.spots ? "a free holder slot" : "slot " + (r.draw.index + 1)}.`);
+      w.append(r.youWon ? (r.prize?.kind === "packs" ? "This one is yours." : "This one is yours. Tell us where to send it.") : "Won by ", r.youWon ? "" : el("b", null, r.draw.winnerShort), r.youWon ? "" : ` with ${r.draw.index >= r.spots ? "a free holder slot" : "slot " + (r.draw.index + 1)}.`);
       res.append(w);
-      if (r.youWon && !r.claimed) res.append(claimForm(r)); else if (r.youWon) res.append(el("p", "msg ok", r.delivered ? "Prize sent." : "Got your details. Your prize is on its way."));
+      if (r.prize?.kind === "packs") {
+        if (r.youWon) res.append(el("p", "msg ok", r.auto?.status === "done" ? "Your card is in your wallet. Open it on Collector Crypt to keep, sell or ship it." : "Your packs are being opened. The card goes straight to your wallet, nothing to fill in."));
+        for (const c of r.auto?.cards || []) res.append(cardRow(c));
+      } else if (r.youWon && !r.claimed) res.append(claimForm(r)); else if (r.youWon) res.append(el("p", "msg ok", r.delivered ? "Prize sent." : "Got your details. Your prize is on its way."));
       const a = el("p"); a.style.margin = "0"; a.append(link("#/verify/" + r.id, "Check this draw yourself"));
       if (r.draw.vrf?.account) a.append(" · ", solscan("account", r.draw.vrf.account, "The random number on Solana"));
       res.append(a);
@@ -344,6 +358,13 @@
     if (!(r.entries || []).length) { const tr = el("tr"); const td = el("td", "empty", "Nobody yet. Be the first."); td.colSpan = 3; tr.append(td); tbl.append(tr); }
     tw.append(tbl); ps.append(tw); v.push(ps);
     return v;
+  }
+
+  function cardRow(c) {
+    const d = el("div", "card-pull");
+    d.append(el("b", null, c.name || "Card"), el("span", "chip", [c.rarity, c.grade ? `grade ${c.grade}` : null].filter(Boolean).join(", ") || "pulled"));
+    if (c.nft) { d.append(" ", solscan("token", c.nft, "NFT on Solscan")); }
+    return d;
   }
 
   function claimForm(r) {
@@ -545,6 +566,8 @@
     $("admin").hidden = !admin;
     if (!admin) return;
     renderVrfStatus();
+    renderVault();
+    loadMachines();
     const list = $("adminList"); list.replaceChildren();
     for (const r of state.raffles) {
       const a = r.admin; if (!a) continue;
@@ -552,16 +575,23 @@
       it.append(el("b", null, `${r.title}: ${stageOf(r)}, ${r.sold} of ${r.spots} sold`));
       if (r.reservedLamports && ["open", "drawing", "drawn"].includes(r.status) && !a.bought) it.append(el("span", "msg", `${sol(r.reservedLamports)} SOL of fees reserved for its free slots.`));
       if (r.draw?.vrf?.error && r.status === "drawing") it.append(el("span", "msg bad", `VRF: ${r.draw.vrf.error}. It retries on its own every 90 seconds.`));
-      if (a.claim) it.append(el("span", null, `Winner ${short(r.draw?.winner)} wants it on ${a.claim.method}: ${a.claim.value}`));
+      const auto = r.prize?.kind === "packs";
+      if (auto) {
+        const au = r.auto;
+        it.append(el("span", "msg", `Prize: ${r.prize.count}× ${r.prize.name}, bought and opened automatically.`));
+        if (r.status === "drawn") it.append(el("span", au?.status === "done" ? "msg ok" : au?.error ? "msg bad" : "msg",
+          au?.status === "done" ? `Done: ${au.bought} card${au.bought === 1 ? "" : "s"} sent to ${short(r.draw.winner)}.` : au?.error ? `Stuck: ${au.error}` : `Buying packs for ${short(r.draw.winner)}… (${au?.bought || 0} of ${r.prize.count})`));
+      } else if (a.claim) it.append(el("span", null, `Winner ${short(r.draw?.winner)} wants it on ${a.claim.method}: ${a.claim.value}`));
       else if (r.status === "drawn") it.append(el("span", "msg", `Winner ${short(r.draw.winner)} hasn't said where to send it yet.`));
       const open = a.refunds.filter((f) => !f.paid);
-      if (open.length) it.append(el("span", "msg bad", `${open.length} refund(s) to pay: ${open.map((f) => `${short(f.wallet)} ${sol(f.lamports)} SOL`).join(", ")}`));
+      if (open.length) it.append(el("span", "msg bad", auto ? `${open.length} refund(s) being paid by the vault.` : `${open.length} refund(s) to pay: ${open.map((f) => `${short(f.wallet)} ${sol(f.lamports)} SOL`).join(", ")}`));
       const row = el("div", "row");
       const act = (label, fn) => { const b = el("button", "btn small", label); b.type = "button"; b.onclick = fn; row.append(b); };
       const run = async (action, extra = {}) => { try { await api("/api/admin?action=" + action, { id: r.id, ...extra }); await load(); } catch (e) { showError(e.message); } };
-      if (open.length) act(`Pay ${open.length} refund(s) from my wallet`, () => payRefunds(r, open));
-      if (r.status === "drawn" && !a.bought) act("Mark prize bought", () => { const note = prompt("Note (e.g. Courtyard order)") ?? ""; run("bought", { note }); });
-      if (r.status === "drawn" && !a.delivered) act("Mark prize sent", () => { const note = prompt("Note (e.g. Courtyard transfer link)") ?? ""; run("delivered", { note }); });
+      if (open.length && !auto) act(`Pay ${open.length} refund(s) from my wallet`, () => payRefunds(r, open));
+      if (auto && r.status === "drawn" && r.auto?.error) act("Try again", () => run("retryPrize"));
+      if (!auto && r.status === "drawn" && !a.bought) act("Mark prize bought", () => { const note = prompt("Note (e.g. Courtyard order)") ?? ""; run("bought", { note }); });
+      if (!auto && r.status === "drawn" && !a.delivered) act("Mark prize sent", () => { const note = prompt("Note (e.g. Courtyard transfer link)") ?? ""; run("delivered", { note }); });
       if (["open", "drawing"].includes(r.status)) act("Cancel and refund", () => confirm("Cancel this raffle and refund everyone?") && run("cancel"));
       if (!["open", "drawing"].includes(r.status) && !open.length) act("Hide", () => run("hide"));
       it.append(row);
@@ -588,6 +618,53 @@
       left != null ? (low ? `. Only enough for ${left} draw(s), top it up.` : `. Enough for about ${left} draws.`) : ".");
   }
 
+  function renderVault() {
+    const box = $("vaultStatus"); if (!box) return;
+    const v = state.vault;
+    box.replaceChildren();
+    if (!v?.enabled) {
+      box.className = "msg";
+      box.append(v?.problem === "not_a_private_key" ? "VAULT_KEY is set but isn't a valid private key." : "Automatic pack raffles are off. To turn them on, add VAULT_KEY in Vercel (a new wallet only used for this) and redeploy.");
+      return;
+    }
+    box.className = "vault";
+    const p = el("p", "msg");
+    p.append("Vault ", solscan("account", v.address, short(v.address)), `: ${v.solLamports != null ? sol(v.solLamports) : "?"} SOL, ${v.usdc != null ? v.usdc.toFixed(2) : "?"} USDC. `);
+    const t = state.lastTick;
+    p.append(t ? `Background check ran ${agoText(t.at)}${t.errors?.length ? ` with problems: ${t.errors.join("; ")}` : ""}. ` : "The background check hasn't run yet. ");
+    const b = el("button", "btn small", "Run it now"); b.type = "button";
+    b.onclick = async () => { b.disabled = true; try { await api("/api/admin?action=tick", {}); await load(); } catch (e) { showError(e.message); b.disabled = false; } };
+    p.append(b); box.append(p);
+    for (const x of v.unmatched || []) {
+      const q = el("p", "msg bad");
+      q.append(`${sol(x.lamports)} SOL arrived from `, solscan("account", x.from, short(x.from)), " without a reservation (", solscan("tx", x.sig, "transaction"), "). It's swept to your wallet with the rest; refund it yourself if it was a mistake. ");
+      const d = el("button", "btn small", "Dismiss"); d.type = "button";
+      d.onclick = async () => { try { await api("/api/admin?action=dismissStray", { sig: x.sig }); await load(); } catch (e) { showError(e.message); } };
+      q.append(d); box.append(q);
+    }
+  }
+  const agoText = (at) => { const m = Math.round((Date.now() / 1000 - at) / 60); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
+
+  let machinesList = null, machinesLoading = false;
+  async function loadMachines() {
+    if (machinesList || machinesLoading || !state.vault?.enabled) return;
+    machinesLoading = true;
+    try { machinesList = (await api("/api/admin?action=machines", {})).machines; }
+    catch { machinesList = null; }
+    machinesLoading = false;
+    const sel = $("createForm").machine; sel.replaceChildren();
+    if (!machinesList?.length) { sel.append(new Option("Couldn't load packs", "")); return; }
+    for (const m of machinesList) sel.append(new Option(`${m.name}, $${m.price}${m.ev ? ` (EV $${Math.round(m.ev)})` : ""}`, m.code));
+    $("createForm").oninput();
+  }
+  function syncKind() {
+    const f = $("createForm"), kind = f.prizeKind.value;
+    for (const l of f.querySelectorAll("[data-kind]")) l.hidden = l.dataset.kind !== kind;
+    f.prizeUsd.required = f.priceSol.required = kind === "manual";
+    f.title.required = kind === "manual";
+    if (kind === "packs" && !state.vault?.enabled) $("createMsg").textContent = "Pack raffles need VAULT_KEY in Vercel first.";
+  }
+
   async function payRefunds(r, open) {
     const p = provider();
     if (!p || !window.solanaWeb3) return showError("Open this page in your wallet to pay refunds.");
@@ -608,8 +685,19 @@
     } catch (e) { showError(/reject/i.test(e?.message) ? "Refund cancelled." : e.message); }
   }
 
+  $("createForm").onchange = syncKind;
   $("createForm").oninput = () => {
     const f = $("createForm");
+    syncKind();
+    if (f.prizeKind.value === "packs") {
+      const m = machinesList?.find((x) => x.code === f.machine.value);
+      const n = Number(f.packCount.value) || 0, spots = Number(f.spots.value);
+      if (m && n > 0 && spots > 1) {
+        const prize = m.price * n, each = Number(f.priceUsd.value) || Math.ceil(prize * 1.1 / spots * 100 - 1e-6) / 100;
+        $("suggest").textContent = `Prize: ${n}× ${m.name} = ${usd(prize)}. ${spots} slots at ${usd2(each)}${state.solUsd ? ` (about ${(each / state.solUsd).toFixed(3)} SOL today)` : ""} bring in ${usd(each * spots)}. The winner gets the card${n === 1 ? "" : "s"} straight in their wallet.`;
+      } else $("suggest").textContent = "";
+      return;
+    }
     const prize = Number(f.prizeUsd.value), spots = Number(f.spots.value), free = Number(f.freeSpots.value) || 0;
     if (prize > 0 && spots > 1 && state?.solUsd) {
       const s = (prize * 1.1) / spots / state.solUsd;
@@ -619,7 +707,7 @@
   $("createForm").onsubmit = async (e) => {
     e.preventDefault();
     const f = e.target;
-    try { await api("/api/admin?action=create", Object.fromEntries(new FormData(f).entries())); $("createMsg").textContent = "Raffle is live."; $("createMsg").className = "msg ok"; f.reset(); await load(); }
+    try { await api("/api/admin?action=create", Object.fromEntries(new FormData(f).entries())); $("createMsg").textContent = "Raffle is live."; $("createMsg").className = "msg ok"; f.reset(); syncKind(); await load(); }
     catch (err) { $("createMsg").textContent = err.message; $("createMsg").className = "msg bad"; }
   };
 

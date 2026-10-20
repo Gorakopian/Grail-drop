@@ -11,7 +11,7 @@ if (existsSync(envPath)) {
     if (m && !process.env[m[1]]) process.env[m[1]] = m[2].replace(/^["']|["']$/g, "");
   }
 }
-const routes = Object.fromEntries(["auth", "state", "enter", "claim", "admin", "proof", "treasury"].map((n) => [`/api/${n}`, () => import(`../api/${n}.js`)]));
+const routes = Object.fromEntries(["auth", "state", "enter", "claim", "admin", "proof", "treasury", "tick"].map((n) => [`/api/${n}`, () => import(`../api/${n}.js`)]));
 const port = Number(process.env.PORT) || 3000;
 http.createServer(async (req, res) => {
   try {

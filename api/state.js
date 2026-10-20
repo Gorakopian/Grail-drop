@@ -2,7 +2,7 @@
 // Also keeps things moving: expired reservations, deadlines, and draws whose block is final.
 import { sessionAddress } from "../lib/auth.js";
 import { listRaffles, settle, maybeDraw, publicView, treasuryStatus } from "../lib/raffles.js";
-import { setJSON, hasDatabase, databaseInfo } from "../lib/redis.js";
+import { setJSON, getJSON, hasDatabase, databaseInfo } from "../lib/redis.js";
 import { solUsd, holderStatus } from "../lib/solana.js";
 import { isAdmin, tokenMint, tokenSymbol, MIN_HOLD, HOLD_HOURS, treasury, blockedCountries, BRAND } from "../lib/config.js";
 import { send, query } from "../lib/http.js";
@@ -24,16 +24,19 @@ export default async function handler(req, res) {
     let gate = null;
     if (wallet && mint) gate = await holderStatus(wallet, mint, MIN_HOLD, HOLD_HOURS).catch(() => ({ ok: false, reason: "check_failed" }));
     const country = String(req.headers?.["x-vercel-ip-country"] || "").toUpperCase();
+    const price = await solUsd();
     return send(res, 200, {
       brand: BRAND,
       coin: { live: !!mint, mint, symbol: tokenSymbol(), minHold: MIN_HOLD, holdHours: HOLD_HOURS },
       entryWallet: treasury(),
-      solUsd: await solUsd(),
+      solUsd: price,
       treasury: await treasuryStatus(raffles).then((t) => ({ wallet: t.wallet, availableLamports: t.availableLamports, reservedLamports: t.reservedLamports, balanceLamports: t.balanceLamports })).catch(() => null),
       me: wallet ? { wallet, admin, gate: mint ? gate : { ok: true, reason: "coin_not_live" } } : null,
+      vault: admin ? await (await import("../lib/auto.js")).vaultStatus().catch(() => null) : undefined,
+      lastTick: admin ? await getJSON("grail:lastTick").catch(() => null) : undefined,
       vrf: admin ? await vrfStatus().catch(() => ({ enabled: vrfEnabled() })) : { enabled: vrfEnabled(), problem: vrfProblem() },
       blocked: country && blockedCountries().includes(country) ? country : null,
-      raffles: raffles.map((r) => publicView(r, wallet, admin, r.id === detail)),
+      raffles: raffles.map((r) => publicView(r, wallet, admin, r.id === detail, price)),
     });
   } catch (e) {
     console.error("state failed", e);

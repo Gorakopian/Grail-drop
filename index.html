@@ -179,6 +179,8 @@ td a { color: var(--paper); }
 dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; margin: 0; }
 dl.kv dt { color: var(--dim); }
 dl.kv dd { margin: 0; overflow-wrap: anywhere; }
+.card-pull { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--seam); }
+.vault { display: grid; gap: 4px; margin-bottom: 12px; }
 .checks { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
 .checks li { display: grid; grid-template-columns: 26px 1fr; gap: 8px; }
 .checks li::before { content: "…"; color: var(--dim); }
@@ -215,20 +217,27 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
   <section class="admin" id="admin" hidden>
     <h2>Admin</h2>
     <p id="vrfStatus"></p>
+    <div id="vaultStatus"></div>
     <form id="createForm">
       <div class="grid">
-        <label>Title<input type="text" name="title" required placeholder="Rolex watch box"></label>
-        <label>Category<select name="category"><option value="watch">Watch</option><option value="sneakers">Sneakers</option><option value="pokemon">Pokémon</option><option value="cards">Cards</option><option value="other">Other</option></select></label>
-        <label>Prize value ($)<input type="number" name="prizeUsd" min="1" required></label>
+        <label>Prize<select name="prizeKind"><option value="manual">Courtyard item (I buy and send it)</option><option value="packs">Collector Crypt packs (automatic)</option></select></label>
+        <label data-kind="packs" hidden>Pack<select name="machine"><option value="">Loading packs…</option></select></label>
+        <label data-kind="packs" hidden>Number of packs<input type="number" name="packCount" min="1" max="20" value="1"></label>
+        <label data-kind="packs" hidden>Price per slot ($)<input type="number" name="priceUsd" step="0.01" min="0.01" placeholder="auto: prize + 10%"></label>
+      </div>
+      <div class="grid">
+        <label>Title<input type="text" name="title" placeholder="Rolex watch box"></label>
+        <label data-kind="manual">Category<select name="category"><option value="watch">Watch</option><option value="sneakers">Sneakers</option><option value="pokemon">Pokémon</option><option value="cards">Cards</option><option value="other">Other</option></select></label>
+        <label data-kind="manual">Prize value ($)<input type="number" name="prizeUsd" min="1"></label>
         <label>Paid slots<input type="number" name="spots" min="2" max="1000" value="50" required></label>
         <label>Free holder slots<input type="number" name="freeSpots" min="0" max="5" value="2"></label>
-        <label>Price per slot (SOL)<input type="number" name="priceSol" step="0.001" min="0.001" required></label>
+        <label data-kind="manual">Price per slot (SOL)<input type="number" name="priceSol" step="0.001" min="0.001"></label>
         <label>Max per wallet<input type="number" name="maxPerWallet" min="1" value="2"></label>
         <label>Open for (hours)<input type="number" name="hours" min="1" value="72"></label>
       </div>
       <div class="grid">
         <label>Image link (https)<input type="url" name="image" placeholder="https://…"></label>
-        <label>Courtyard link<input type="url" name="link" placeholder="https://courtyard.io/…"></label>
+        <label data-kind="manual">Courtyard link<input type="url" name="link" placeholder="https://courtyard.io/…"></label>
       </div>
       <p class="msg" id="suggest"></p>
       <div class="row"><button class="btn primary" type="submit">Create raffle</button><span class="msg" id="createMsg"></span></div>
@@ -237,7 +246,7 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
   </section>
 
   <footer>
-    18+ only. Raffles aren't available where they're prohibited, so check your local rules before you play. Slot payments go to the entry wallet; free slots are paid from the fees wallet; prizes are bought on Courtyard after a raffle fills. Nothing here is financial advice.
+    18+ only. Raffles aren't available where they're prohibited, so check your local rules before you play. Slot payments go to the wallet shown on each raffle; free slots are paid from the fees wallet; prizes are bought on Courtyard, or opened at Collector Crypt, after a raffle fills. Nothing here is financial advice.
   </footer>
 </div>
 

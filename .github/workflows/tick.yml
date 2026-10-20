@@ -1,0 +1,15 @@
+# Keeps SLOT moving when nobody has the site open: confirms payments, runs draws,
+# buys and opens pack prizes for winners, pays vault refunds. See api/tick.js.
+name: tick
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - run: curl -fsS --max-time 70 "${SITE_URL:-https://graildrop.vercel.app}/api/tick" || true
+        env:
+          SITE_URL: ${{ vars.SITE_URL }}

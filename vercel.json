@@ -5,7 +5,13 @@
   "installCommand": "npm install --omit=dev",
   "functions": {
     "api/*.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     }
-  }
+  },
+  "crons": [
+    {
+      "path": "/api/tick",
+      "schedule": "7 6 * * *"
+    }
+  ]
 }

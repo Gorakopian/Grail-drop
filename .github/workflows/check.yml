@@ -1,0 +1,12 @@
+name: check
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          r=""
+          for u in https://graildrop.vercel.app/ https://graildrop.vercel.app/api/state https://degen-radio-live.vercel.app/ https://exitcall-two.vercel.app/ https://roasterr.vercel.app/; do
+            c=$(curl -s -o body.txt -w "%{http_code}" --max-time 20 "$u"); r="$r | $u $c $(head -c 80 body.txt | tr -d '\n')"
+          done
+          echo "::notice title=check::$r"

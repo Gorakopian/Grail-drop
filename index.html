@@ -225,7 +225,9 @@ dl.kv dd { margin: 0; overflow-wrap: anywhere; }
       <p class="msg">When on, every pack always has one open raffle. When it fills, the pack is bought and opened for the winner and the next raffle for that pack starts by itself.</p>
       <div class="grid">
         <label class="agree" style="display:flex;align-items:center;gap:8px;align-self:end"><input type="checkbox" name="on"> Autopilot on</label>
-        <label>Slot price around ($)<input type="number" name="targetSlotUsd" step="0.5" min="0.5"></label>
+        <label>Slots for packs under the limit<input type="number" name="smallSlots" min="2" max="1000"></label>
+        <label>Limit ($)<input type="number" name="tierUsd" min="1"></label>
+        <label>Slots for packs from the limit up<input type="number" name="bigSlots" min="2" max="1000"></label>
         <label>Margin (%)<input type="number" name="marginPct" step="1" min="0" max="50"></label>
         <label>Open for (hours)<input type="number" name="hours" min="1"></label>
         <label>Max slots per wallet<input type="number" name="maxPerWallet" min="1"></label>

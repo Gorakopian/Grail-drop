@@ -653,7 +653,7 @@
     if (f.hidden) return;
     const st = state.autopilot.settings;
     if (!autopilotFilled) { // don't overwrite what the admin is typing
-      f.on.checked = !!st.on; f.targetSlotUsd.value = st.targetSlotUsd; f.marginPct.value = st.marginPct;
+      f.on.checked = !!st.on; f.smallSlots.value = st.smallSlots; f.tierUsd.value = st.tierUsd; f.bigSlots.value = st.bigSlots; f.marginPct.value = st.marginPct;
       f.hours.value = st.hours; f.maxPerWallet.value = st.maxPerWallet; f.exclude.value = (st.exclude || []).join(", ");
       autopilotFilled = true;
     }
@@ -668,7 +668,7 @@
   $("autopilotForm").onsubmit = async (e) => {
     e.preventDefault();
     const f = e.target;
-    const body = { on: f.on.checked, targetSlotUsd: f.targetSlotUsd.value, marginPct: f.marginPct.value, hours: f.hours.value, maxPerWallet: f.maxPerWallet.value, exclude: f.exclude.value };
+    const body = { on: f.on.checked, smallSlots: f.smallSlots.value, tierUsd: f.tierUsd.value, bigSlots: f.bigSlots.value, marginPct: f.marginPct.value, hours: f.hours.value, maxPerWallet: f.maxPerWallet.value, exclude: f.exclude.value };
     try {
       await api("/api/admin?action=autopilot", body);
       if (body.on) await api("/api/admin?action=tick", {}).catch(() => {});

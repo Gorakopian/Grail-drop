@@ -296,12 +296,13 @@ assert.equal(m.prize, undefined);
 {
   const AP = await import("../lib/autopilot.js");
   const { setJSON } = await import("../lib/redis.js");
-  // pure: slot plan
-  assert.deepEqual(AP.plan(50, AP.DEFAULTS), { spots: 11, priceUsd: 5 });
-  assert.deepEqual(AP.plan(25, AP.DEFAULTS), { spots: 6, priceUsd: 4.59 });
-  assert.deepEqual(AP.plan(500, AP.DEFAULTS), { spots: 110, priceUsd: 5 });
-  assert.equal(AP.plan(5000, AP.DEFAULTS).spots, 500, "capped at maxSlots");
-  for (const usdv of [25, 50, 77, 250, 999]) { const p = AP.plan(usdv, AP.DEFAULTS); assert.ok(p.spots * p.priceUsd >= usdv * 1.1 - 1e-9, "covers prize + margin " + usdv); }
+  // pure: slot plan — fixed slots per tier, price follows the pack
+  assert.deepEqual(AP.plan(25, AP.DEFAULTS), { spots: 20, priceUsd: 1.38 });
+  assert.deepEqual(AP.plan(500, AP.DEFAULTS), { spots: 20, priceUsd: 27.5 });
+  assert.deepEqual(AP.plan(999, AP.DEFAULTS), { spots: 20, priceUsd: 54.95 });
+  assert.deepEqual(AP.plan(1000, AP.DEFAULTS), { spots: 50, priceUsd: 22 });
+  assert.deepEqual(AP.plan(5000, { ...AP.DEFAULTS, bigSlots: 100 }), { spots: 100, priceUsd: 55 });
+  for (const usdv of [25, 50, 77, 250, 999, 2500]) { const p = AP.plan(usdv, AP.DEFAULTS); assert.ok(p.spots * p.priceUsd >= usdv * 1.1 - 1e-9, "covers prize + margin " + usdv); }
 
   await setJSON("grail:cc:machines", [
     { code: "pkmn_25", name: "PKMN 25", price: 25, stockLeft: 40 },
@@ -317,14 +318,14 @@ assert.equal(m.prize, undefined);
   assert.deepEqual((await AP.runAutopilot()).created, [], "no duplicates");
   const all = await R.listRaffles();
   const w = all.find((x) => x.autopilot === "watch_500");
-  assert.deepEqual([w.title, w.category, w.spots, w.priceUsd, w.prizeUsd, w.payTo], ["WATCH 500", "watch", 110, 5, 500, VAULT]);
+  assert.deepEqual([w.title, w.category, w.spots, w.priceUsd, w.prizeUsd, w.payTo], ["WATCH 500", "watch", 20, 27.5, 500, VAULT]);
   const pk = all.find((x) => x.autopilot === "pkmn_25");
-  assert.equal(pk.spots, 6);
+  assert.equal(pk.spots, 20);
 
   // fill the PKMN 25 raffle → it draws, buys, and a new PKMN 25 raffle opens
   await setJSON("grail:cc:machines", [{ code: "pkmn_25", name: "PKMN 25", price: 25, stockLeft: 40 }, { code: "watch_500", name: "WATCH 500", price: 500, stockLeft: 3 }]);
-  const buyers = Array.from({ length: 6 }, () => Keypair.generate().publicKey.toBase58());
-  for (const [i, wlt] of buyers.entries()) { const h = await R.reserve({ id: pk.id, wallet: wlt, n: 1 }); pay(("AP" + "abcdef"[i]).padEnd(88, "p"), wlt, VAULT, h.lamports); }
+  const buyers = Array.from({ length: 20 }, () => Keypair.generate().publicKey.toBase58());
+  for (const [i, wlt] of buyers.entries()) { const h = await R.reserve({ id: pk.id, wallet: wlt, n: 1 }); pay(("AP" + "abcdefghijkmnopqrstuvwxyz"[i]).padEnd(88, "p"), wlt, VAULT, h.lamports); }
   height++; await AU.tick();
   const after = await R.listRaffles();
   assert.notEqual((await R.getRaffle(pk.id)).status, "open");

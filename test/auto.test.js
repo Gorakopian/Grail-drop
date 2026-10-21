@@ -311,7 +311,8 @@ assert.equal(m.prize, undefined);
     { code: "pkmn_5000", name: "PKMN 5000", price: 5000, stockLeft: 9 },
     { code: "soccer_50", name: "SOCCER 50", price: 50, stockLeft: 0 },
   ]);
-  assert.deepEqual(await AP.runAutopilot(), { off: true }, "off until the admin turns it on");
+  await AP.saveSettings({ on: false });
+  assert.deepEqual(await AP.runAutopilot(), { off: true }, "the admin can switch it off");
   await AP.saveSettings({ on: true });
   let res = await AP.runAutopilot();
   assert.deepEqual(res.created.sort(), ["pkmn_25", "watch_500"]);

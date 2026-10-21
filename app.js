@@ -70,8 +70,8 @@
     const g = state.me.gate, c = state.coin;
     if (c.live) {
       const need = needText();
-      box.append(g?.ok ? el("span", "chip ok", `Holder ✓ ${Math.floor((g.balance || 0) / 1e5) / 10}M $${c.symbol}`)
-        : el("span", "chip no", g?.reason === "not_long_enough" ? `Hold ${need} for ${c.holdHours}h to enter` : g?.reason === "too_busy" ? "Hold check pending" : `Need ${need} to enter`));
+      if (g?.ok) box.append(el("span", "chip ok", `Holder ✓ in the free slot draws`)); // holding is optional: it only gives free-slot chances
+      void need;
     }
     box.append(el("span", "chip", short(state.me.wallet)));
     const out = el("button", "btn small", "Sign out"); out.type = "button";
@@ -176,7 +176,6 @@
     const can = Math.min(r.maxPerWallet - r.mine, left - r.reserved);
     if (left <= 0) { row.append(el("span", "msg", "Sold out, the draw is next.")); return row; }
     if (!state.me) { const b = el("button", "btn primary", "Connect to buy a slot"); b.type = "button"; b.onclick = connect; row.append(b); return row; }
-    if (state.coin.live && !state.me.gate?.ok) { row.append(el("span", "msg", `Hold ${needText()} for ${state.coin.holdHours}h to buy slots.`)); return row; }
     if (can <= 0) { row.append(el("span", "msg", r.mine >= r.maxPerWallet ? `You have the max ${r.maxPerWallet} slots.` : "All slots are being paid for. Check back in a few minutes.")); return row; }
     for (let n = 1; n <= Math.min(can, 2); n++) {
       const b = el("button", "btn" + (n === 1 ? " primary" : ""), n === 1 ? "Buy 1 slot" : `Buy ${n} slots`);
@@ -192,7 +191,7 @@
     const v = [];
     const hero = el("section", "hero");
     hero.append(el("h1", null, "Grab a slot. Win the grail."));
-    hero.append(el("p", null, `Raffles for real watches, sneakers and Pokémon cards, bought on Courtyard and sent to the winner. Every raffle fills or refunds, 2 slots go free to holders, and a Solana slot picks the winner.`));
+    hero.append(el("p", null, `Raffles for real graded cards and watches. Every raffle fills or refunds, the winner is picked on-chain, and the prize lands straight in their wallet.`));
     const t = state.treasury;
     if (t?.wallet) {
       const purse = el("div", "purse");
@@ -209,10 +208,10 @@
     const rules = el("div", "rules");
     const rule = (h, p) => { const d = el("div"); d.append(el("h3", null, h), el("p", null, p)); rules.append(d); };
     rule("Fill or refund", "The draw only happens when every paid slot is sold. If a raffle isn't full by its deadline, everyone gets their SOL back.");
-    rule("Holders only", state.coin.live ? `Hold ${needText()} for ${state.coin.holdHours} hours to buy slots. Max 2 slots per wallet per raffle.` : `Once $${state.coin.symbol} launches, you'll need to hold ${needText()} for ${state.coin.holdHours} hours to buy slots. Max 2 slots per wallet per raffle.`);
-    rule("2 free slots for holders", `When a raffle fills, 2 extra slots go to random holders of ${needText()} or more. Every holder has the same chance. The coin's trading fees pay for them.`);
-    rule("Provably fair", "Paid slots and the holder list are locked first, then the hash of a Solana slot about 15 seconds later picks the winners. Anyone can check it.");
-    rule("Real prizes", "Prizes are bought on Courtyard after the raffle fills. You get the item there: keep it, ship it home, or sell it back.");
+    rule("Anyone can play", "Connect a Solana wallet and grab a slot. A few slots per wallet per raffle, so everyone gets a shot.");
+    rule("Free slots for holders", state.coin.live ? `When a raffle fills, 2 extra slots go to random wallets holding ${needText()} or more. Every holder has the same chance, drawn with the same on-chain randomness.` : `Once $${state.coin.symbol} launches, every full raffle gets 2 extra slots for random holders of ${needText()}, drawn with the same on-chain randomness.`);
+    rule("Provably fair", state.vrf?.enabled ? "The paid slots are locked first, then ORAO's verifiable randomness on Solana picks the winner. Anyone can check the draw." : "The paid slots are locked first, then the hash of a later Solana block picks the winner. Anyone can check the draw.");
+    rule("Real prizes", "Packs come from Collector Crypt: opened right after the draw, the graded card or watch goes straight to the winner's wallet. Keep it, sell it back, or have it shipped.");
     v.push(rules);
     return v;
   }

@@ -636,6 +636,7 @@
     const b = el("button", "btn small", "Run it now"); b.type = "button";
     b.onclick = async () => { b.disabled = true; try { await api("/api/admin?action=tick", {}); await load(); } catch (e) { showError(e.message); b.disabled = false; } };
     p.append(b); box.append(p);
+    if (state.rpcFallback && Date.now() / 1000 - state.rpcFallback.at < 3600) box.append(el("p", "msg bad", `Helius isn't answering (${state.rpcFallback.why}). SLOT uses the public Solana RPC for now, which is slower. Add credits in Helius or set SOLANA_RPC in Vercel.`));
     for (const x of v.unmatched || []) {
       const q = el("p", "msg bad");
       q.append(`${sol(x.lamports)} SOL arrived from `, solscan("account", x.from, short(x.from)), " without a reservation (", solscan("tx", x.sig, "transaction"), "). It's swept to your wallet with the rest; refund it yourself if it was a mistake. ");

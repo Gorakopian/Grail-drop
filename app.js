@@ -131,10 +131,71 @@
   }
   const oddsText = (r) => `1 in ${r.spots + (r.status === "drawn" ? r.draw.freeWinners.length : r.freeSpots)} per slot`;
 
+  // ---- pack art: our own foil-pack design per pack, so every raffle looks the same family ----
+  const PACK_THEMES = [
+    [/^ewatch|watch/, "WATCH", "#e9c46a", "#15120c", "watch", "1 watch"],
+    [/^e10|psa/, "PSA 10", "#f1f1f1", "#a4161a", "star", "1 PSA 10 card"],
+    [/^sealed/, "SEALED", "#d9dee8", "#3d4a5c", "box", "1 sealed product"],
+    [/^pokemon/, "POKÉMON", "#ffd84d", "#2d4ea2", "card", "1 graded card"],
+    [/^onepiece/, "ONE PIECE", "#ff5a5f", "#6d0f16", "card", "1 graded card"],
+    [/^dragonball/, "DRAGON BALL", "#ffa23a", "#8a2c00", "card", "1 graded card"],
+    [/^riftbound/, "RIFTBOUND", "#a48bff", "#24145e", "card", "1 graded card"],
+    [/^anime/, "ANIME", "#ff7ab8", "#5a1550", "card", "1 graded card"],
+    [/^soccer/, "SOCCER", "#4fd18b", "#0b3d2a", "ball", "1 graded card"],
+    [/^basketball/, "BASKETBALL", "#ff9f43", "#6b2c05", "ball", "1 graded card"],
+    [/^baseball/, "BASEBALL", "#7fb2ff", "#0f2a57", "ball", "1 graded card"],
+    [/^football/, "FOOTBALL", "#d9a066", "#3b2410", "ball", "1 graded card"],
+    [/^sports/, "SPORTS", "#5ee0c0", "#0c3b4a", "ball", "1 graded card"],
+    [/^lorcana/, "LORCANA", "#9fd3ff", "#1c2f66", "card", "1 graded card"],
+    [/^comic/, "COMICS", "#ffe066", "#7a1f1f", "card", "1 graded comic"],
+  ];
+  function packTheme(code) {
+    const t = PACK_THEMES.find(([re]) => re.test(code || "")) || [null, "PACK", "#f4c95d", "#1b2545", "card", "1 graded collectible"];
+    return { label: t[1], light: t[2], dark: t[3], glyph: t[4], inside: t[5] };
+  }
+  const GLYPH = {
+    card: '<rect x="47" y="58" width="26" height="36" rx="4" fill="none" stroke="#fff" stroke-width="3"/><rect x="53" y="64" width="14" height="14" rx="2" fill="#fff" opacity=".85"/>',
+    watch: '<circle cx="60" cy="76" r="17" fill="none" stroke="#fff" stroke-width="3"/><rect x="54" y="52" width="12" height="7" rx="2" fill="#fff"/><rect x="54" y="93" width="12" height="7" rx="2" fill="#fff"/><path d="M60 76V66M60 76l7 4" stroke="#fff" stroke-width="3" stroke-linecap="round"/>',
+    ball: '<circle cx="60" cy="76" r="17" fill="none" stroke="#fff" stroke-width="3"/><path d="M43 76h34M60 59c-7 6-7 28 0 34M60 59c7 6 7 28 0 34" fill="none" stroke="#fff" stroke-width="2.4"/>',
+    star: '<path d="M60 57l5.6 11.6 12.7 1.8-9.2 8.9 2.2 12.6L60 85.9 48.7 91.9l2.2-12.6-9.2-8.9 12.7-1.8z" fill="#fff"/>',
+    box: '<path d="M44 68l16-8 16 8v18l-16 8-16-8z" fill="none" stroke="#fff" stroke-width="3" stroke-linejoin="round"/><path d="M44 68l16 8 16-8M60 76v18" fill="none" stroke="#fff" stroke-width="2.4"/>',
+  };
+  let packArtId = 0;
+  function packArt(r) {
+    const t = packTheme(r.prize?.machine), id = "pa" + (packArtId++);
+    const price = `$${Number(r.prize?.unitUsd || r.prizeUsd).toLocaleString("en-US")}`;
+    const n = r.prize?.count > 1 ? `${r.prize.count}×` : "";
+    const top = [], bottom = [];
+    for (let i = 0, x = 8; x <= 112; i++, x += 8) { top.push(`${x} ${i % 2 ? 10 : 14}`); bottom.unshift(`${x} ${i % 2 ? 150 : 146}`); }
+    const body = `M${top.join(" L")} L${bottom.join(" L")} Z`; // crimped top and bottom edges
+    const svg = `<svg viewBox="0 0 120 160" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${t.light}"/><stop offset="1" stop-color="${t.dark}"/></linearGradient>
+        <linearGradient id="${id}s" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>
+        <clipPath id="${id}c"><path d="${body}"/></clipPath>
+      </defs>
+      <g clip-path="url(#${id}c)">
+        <rect width="120" height="160" fill="url(#${id}g)"/>
+        <rect x="-40" y="0" width="34" height="200" fill="url(#${id}s)" transform="rotate(22 60 80)"/>
+        <rect y="0" width="120" height="24" fill="#000" opacity=".22"/><rect y="136" width="120" height="24" fill="#000" opacity=".22"/>
+        <path d="M0 24h120M0 136h120" stroke="#fff" stroke-opacity=".25"/>
+      </g>
+      <text x="60" y="38" text-anchor="middle" font-family="inherit" font-weight="800" font-size="${t.label.length > 9 ? 9 : 11}" letter-spacing="1.2" fill="#fff">${t.label}</text>
+      <circle cx="60" cy="76" r="26" fill="#000" opacity=".2"/>
+      ${GLYPH[t.glyph] || GLYPH.card}
+      <text x="60" y="122" text-anchor="middle" font-family="inherit" font-weight="900" font-size="20" fill="#fff" stroke="#000" stroke-opacity=".25" stroke-width=".6">${n}${price}</text>
+      <text x="60" y="149" text-anchor="middle" font-family="inherit" font-weight="800" font-size="7" letter-spacing="2" fill="#fff" opacity=".85">SLOT</text>
+    </svg>`;
+    const d = el("div", "pic packart"); d.setAttribute("role", "img"); d.setAttribute("aria-label", `${r.title}: ${t.inside}`);
+    d.innerHTML = svg;
+    return d;
+  }
+
   // Pack pictures are 1080px cut-outs: served resized as WebP through Vercel's image optimizer, shown whole.
   const optimized = (src, w) => !/^(localhost|127\.)/.test(location.hostname) && /\.public\.blob\.vercel-storage\.com\//.test(src)
     ? `/_vercel/image?url=${encodeURIComponent(src)}&w=${w}&q=80` : src;
   function pic(r, w = 384) {
+    if (r.prize?.kind === "packs") return packArt(r);
     const p = el("div", "pic");
     p.setAttribute("role", "img"); p.setAttribute("aria-label", r.title);
     if (!r.image) { p.textContent = ICON[r.category] || "🎁"; p.classList.add("noimg"); return p; }

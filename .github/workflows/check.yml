@@ -1,0 +1,9 @@
+name: check
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          curl -s --max-time 60 https://graildrop.vercel.app/api/state -o s.json
+          echo "::notice title=state::$(jq -c '{n:(.raffles|length), sol:.solUsd, r:[.raffles[] | {t:.title, s:.spots, usd:.priceUsd, sol:(.priceLamports/1e9), img:(.image!=null), cat:.category}] }' s.json | head -c 3900)"

@@ -177,14 +177,14 @@
       <g clip-path="url(#${id}c)">
         <rect width="120" height="160" fill="url(#${id}g)"/>
         <rect x="-40" y="0" width="34" height="200" fill="url(#${id}s)" transform="rotate(22 60 80)"/>
-        <rect y="0" width="120" height="24" fill="#000" opacity=".22"/><rect y="136" width="120" height="24" fill="#000" opacity=".22"/>
-        <path d="M0 24h120M0 136h120" stroke="#fff" stroke-opacity=".25"/>
+        <rect y="0" width="120" height="24" fill="#000" opacity=".22"/><rect y="128" width="120" height="32" fill="#000" opacity=".28"/>
+        <path d="M0 24h120M0 128h120" stroke="#fff" stroke-opacity=".25"/>
       </g>
       <text x="60" y="38" text-anchor="middle" font-family="inherit" font-weight="800" font-size="${t.label.length > 9 ? 9 : 11}" letter-spacing="1.2" fill="#fff">${t.label}</text>
-      <circle cx="60" cy="76" r="26" fill="#000" opacity=".2"/>
-      ${GLYPH[t.glyph] || GLYPH.card}
-      <text x="60" y="122" text-anchor="middle" font-family="inherit" font-weight="900" font-size="20" fill="#fff" stroke="#000" stroke-opacity=".25" stroke-width=".6">${n}${price}</text>
-      <text x="60" y="149" text-anchor="middle" font-family="inherit" font-weight="800" font-size="7" letter-spacing="2" fill="#fff" opacity=".85">SLOT</text>
+      <g transform="translate(0 -7)"><circle cx="60" cy="76" r="24" fill="#000" opacity=".2"/>
+      ${GLYPH[t.glyph] || GLYPH.card}</g>
+      <text x="60" y="118" text-anchor="middle" font-family="inherit" font-weight="900" font-size="20" fill="#fff" stroke="#000" stroke-opacity=".25" stroke-width=".6">${n}${price}</text>
+      <text x="60" y="141.5" text-anchor="middle" font-family="inherit" font-weight="900" font-size="10" letter-spacing="2.5" fill="#fff">SLOT</text>
     </svg>`;
     const d = el("div", "pic packart"); d.setAttribute("role", "img"); d.setAttribute("aria-label", `${r.title}: ${t.inside}`);
     d.innerHTML = svg;

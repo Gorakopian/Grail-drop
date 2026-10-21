@@ -33,6 +33,7 @@ export default async function handler(req, res) {
       treasury: await treasuryStatus(raffles).then((t) => ({ wallet: t.wallet, availableLamports: t.availableLamports, reservedLamports: t.reservedLamports, balanceLamports: t.balanceLamports })).catch(() => null),
       me: wallet ? { wallet, admin, gate: mint ? gate : { ok: true, reason: "coin_not_live" } } : null,
       vault: admin ? await (await import("../lib/auto.js")).vaultStatus().catch(() => null) : undefined,
+      autopilot: admin ? { settings: await (await import("../lib/autopilot.js")).settings().catch(() => null), last: await getJSON("grail:autopilot:last").catch(() => null) } : undefined,
       lastTick: admin ? await getJSON("grail:lastTick").catch(() => null) : undefined,
       vrf: admin ? await vrfStatus().catch(() => ({ enabled: vrfEnabled() })) : { enabled: vrfEnabled(), problem: vrfProblem() },
       blocked: country && blockedCountries().includes(country) ? country : null,

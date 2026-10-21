@@ -567,6 +567,7 @@
     if (!admin) return;
     renderVrfStatus();
     renderVault();
+    renderAutopilot();
     loadMachines();
     const list = $("adminList"); list.replaceChildren();
     for (const r of state.raffles) {
@@ -644,6 +645,37 @@
     }
   }
   const agoText = (at) => { const m = Math.round((Date.now() / 1000 - at) / 60); return m < 1 ? "just now" : m < 60 ? `${m} min ago` : `${Math.round(m / 60)} h ago`; };
+
+  let autopilotFilled = false;
+  function renderAutopilot() {
+    const f = $("autopilotForm"); if (!f) return;
+    f.hidden = !state.vault?.enabled || !state.autopilot?.settings;
+    if (f.hidden) return;
+    const st = state.autopilot.settings;
+    if (!autopilotFilled) { // don't overwrite what the admin is typing
+      f.on.checked = !!st.on; f.targetSlotUsd.value = st.targetSlotUsd; f.marginPct.value = st.marginPct;
+      f.hours.value = st.hours; f.maxPerWallet.value = st.maxPerWallet; f.exclude.value = (st.exclude || []).join(", ");
+      autopilotFilled = true;
+    }
+    const l = state.autopilot.last, box = $("autopilotLast"); box.replaceChildren();
+    if (!st.on) box.append("Autopilot is off.");
+    else if (!l) box.append("Autopilot is on. The first raffles open within 5 minutes.");
+    else {
+      box.append(`${l.running} pack raffle${l.running === 1 ? "" : "s"} running (checked ${agoText(l.at)}).`);
+      if (l.skipped?.length) { const ul = el("ul"); for (const x of l.skipped) ul.append(el("li", null, `${x.name || x.code}: ${x.reason}`)); box.append(" Skipped:", ul); }
+    }
+  }
+  $("autopilotForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const f = e.target;
+    const body = { on: f.on.checked, targetSlotUsd: f.targetSlotUsd.value, marginPct: f.marginPct.value, hours: f.hours.value, maxPerWallet: f.maxPerWallet.value, exclude: f.exclude.value };
+    try {
+      await api("/api/admin?action=autopilot", body);
+      if (body.on) await api("/api/admin?action=tick", {}).catch(() => {});
+      $("autopilotMsg").textContent = body.on ? "Saved. Raffles are being opened." : "Saved. No new raffles will open; running ones finish."; $("autopilotMsg").className = "msg ok";
+      autopilotFilled = false; await load();
+    } catch (err) { $("autopilotMsg").textContent = err.message; $("autopilotMsg").className = "msg bad"; }
+  };
 
   let machinesList = null, machinesLoading = false;
   async function loadMachines() {

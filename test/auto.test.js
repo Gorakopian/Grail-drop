@@ -292,4 +292,48 @@ await redis("DEL", "grail:tick");
 const m = (await R.createRaffle({ title: "Rolex box", prizeUsd: 5000, spots: 2, priceSol: 0.1 })).raffle;
 assert.equal(R.payToOf(m), ADMIN);
 assert.equal(m.prize, undefined);
+// ---- autopilot: one open raffle per pack, a new one as soon as one fills --------------------------
+{
+  const AP = await import("../lib/autopilot.js");
+  const { setJSON } = await import("../lib/redis.js");
+  // pure: slot plan
+  assert.deepEqual(AP.plan(50, AP.DEFAULTS), { spots: 11, priceUsd: 5 });
+  assert.deepEqual(AP.plan(25, AP.DEFAULTS), { spots: 6, priceUsd: 4.59 });
+  assert.deepEqual(AP.plan(500, AP.DEFAULTS), { spots: 110, priceUsd: 5 });
+  assert.equal(AP.plan(5000, AP.DEFAULTS).spots, 500, "capped at maxSlots");
+  for (const usdv of [25, 50, 77, 250, 999]) { const p = AP.plan(usdv, AP.DEFAULTS); assert.ok(p.spots * p.priceUsd >= usdv * 1.1 - 1e-9, "covers prize + margin " + usdv); }
+
+  await setJSON("grail:cc:machines", [
+    { code: "pkmn_25", name: "PKMN 25", price: 25, stockLeft: 40 },
+    { code: "watch_500", name: "WATCH 500", price: 500, stockLeft: 3 },
+    { code: "pkmn_5000", name: "PKMN 5000", price: 5000, stockLeft: 9 },
+    { code: "soccer_50", name: "SOCCER 50", price: 50, stockLeft: 0 },
+  ]);
+  assert.deepEqual(await AP.runAutopilot(), { off: true }, "off until the admin turns it on");
+  await AP.saveSettings({ on: true });
+  let res = await AP.runAutopilot();
+  assert.deepEqual(res.created.sort(), ["pkmn_25", "watch_500"]);
+  assert.deepEqual(res.skipped.map((x) => x.code + ":" + x.reason).sort(), ["pkmn_5000:above the $1000 cap", "soccer_50:out of stock"]);
+  assert.deepEqual((await AP.runAutopilot()).created, [], "no duplicates");
+  const all = await R.listRaffles();
+  const w = all.find((x) => x.autopilot === "watch_500");
+  assert.deepEqual([w.title, w.category, w.spots, w.priceUsd, w.prizeUsd, w.payTo], ["WATCH 500", "watch", 110, 5, 500, VAULT]);
+  const pk = all.find((x) => x.autopilot === "pkmn_25");
+  assert.equal(pk.spots, 6);
+
+  // fill the PKMN 25 raffle → it draws, buys, and a new PKMN 25 raffle opens
+  await setJSON("grail:cc:machines", [{ code: "pkmn_25", name: "PKMN 25", price: 25, stockLeft: 40 }, { code: "watch_500", name: "WATCH 500", price: 500, stockLeft: 3 }]);
+  const buyers = Array.from({ length: 6 }, () => Keypair.generate().publicKey.toBase58());
+  for (const [i, wlt] of buyers.entries()) { const h = await R.reserve({ id: pk.id, wallet: wlt, n: 1 }); pay(("AP" + "abcdef"[i]).padEnd(88, "p"), wlt, VAULT, h.lamports); }
+  height++; await AU.tick();
+  const after = await R.listRaffles();
+  assert.notEqual((await R.getRaffle(pk.id)).status, "open");
+  assert.equal(after.filter((x) => x.autopilot === "pkmn_25" && x.status === "open").length, 1, "a fresh PKMN 25 raffle is open");
+  assert.equal(after.filter((x) => x.autopilot === "watch_500" && x.status === "open").length, 1);
+
+  // turning a pack off stops new raffles for it (running one stays)
+  await AP.saveSettings({ on: true, exclude: "watch_500" });
+  assert.equal((await AP.runAutopilot()).skipped.find((x) => x.code === "watch_500").reason, "turned off");
+}
+
 console.log("auto OK");

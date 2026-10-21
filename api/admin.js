@@ -25,6 +25,7 @@ export default async function handler(req, res) {
       await setJSON("grail:unmatched", list);
       return send(res, 200, { ok: true });
     }
+    if (action === "autopilot") return send(res, 200, { settings: await (await import("../lib/autopilot.js")).saveSettings(body) });
     if (action === "tick") return send(res, 200, await (await import("../lib/auto.js")).tick());
     const r = await adminAction(action, body);
     return send(res, r.error ? 400 : 200, r);

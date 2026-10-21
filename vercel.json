@@ -13,5 +13,23 @@
       "path": "/api/tick",
       "schedule": "7 6 * * *"
     }
-  ]
+  ],
+  "images": {
+    "sizes": [
+      256,
+      384,
+      640,
+      1080
+    ],
+    "formats": [
+      "image/webp"
+    ],
+    "minimumCacheTTL": 86400,
+    "remotePatterns": [
+      {
+        "protocol": "https",
+        "hostname": "**.public.blob.vercel-storage.com"
+      }
+    ]
+  }
 }

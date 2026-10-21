@@ -64,7 +64,11 @@ header.top { display: flex; align-items: center; justify-content: space-between;
 h2 { font: 400 24px/1.1 var(--font-display); margin: 36px 0 14px; }
 
 .raffle { background: var(--velvet-2); border: 1px solid var(--seam); border-radius: 18px; padding: 16px; display: grid; grid-template-columns: 148px 1fr; gap: 18px; margin-bottom: 16px; }
-.raffle .pic { width: 148px; aspect-ratio: 1; border-radius: 12px; background: var(--velvet) center / cover no-repeat; border: 1px solid var(--seam); display: grid; place-items: center; font-size: 46px; }
+.pic { border-radius: 12px; background: var(--velvet); border: 1px solid var(--seam); display: grid; place-items: center; overflow: hidden; }
+.raffle .pic { width: 148px; aspect-ratio: 1; font-size: 46px; }
+.pic img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.pic.pack { background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--gold) 22%, var(--velvet)) 0%, var(--velvet) 70%); }
+.pic.pack img { object-fit: contain; padding: 6%; filter: drop-shadow(0 8px 18px rgba(0,0,0,.45)); }
 .raffle .body { display: grid; gap: 12px; min-width: 0; }
 .raffle .body > p { margin: 0; }
 .raffle .head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: baseline; }

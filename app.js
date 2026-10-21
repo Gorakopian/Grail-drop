@@ -131,10 +131,18 @@
   }
   const oddsText = (r) => `1 in ${r.spots + (r.status === "drawn" ? r.draw.freeWinners.length : r.freeSpots)} per slot`;
 
-  function pic(r) {
+  // Pack pictures are 1080px cut-outs: served resized as WebP through Vercel's image optimizer, shown whole.
+  const optimized = (src, w) => !/^(localhost|127\.)/.test(location.hostname) && /\.public\.blob\.vercel-storage\.com\//.test(src)
+    ? `/_vercel/image?url=${encodeURIComponent(src)}&w=${w}&q=80` : src;
+  function pic(r, w = 384) {
     const p = el("div", "pic");
-    if (r.image) p.style.backgroundImage = `url("${r.image.replace(/"/g, "")}")`; else { p.textContent = ICON[r.category] || "🎁"; p.classList.add("noimg"); }
     p.setAttribute("role", "img"); p.setAttribute("aria-label", r.title);
+    if (!r.image) { p.textContent = ICON[r.category] || "🎁"; p.classList.add("noimg"); return p; }
+    const img = el("img"); img.alt = ""; img.loading = "lazy"; img.decoding = "async";
+    img.src = optimized(r.image, w);
+    img.onerror = () => { if (img.src !== r.image) img.src = r.image; else { p.replaceChildren(ICON[r.category] || "🎁"); p.classList.add("noimg"); } };
+    if (r.prize?.kind === "packs") p.classList.add("pack");
+    p.append(img);
     return p;
   }
 
@@ -302,7 +310,7 @@
     const cols = el("div", "cols");
     const prog = el("section", "panel"); prog.append(el("h2", null, "Progress"), steps(r));
     const info = el("section", "panel"); info.append(el("h2", null, "The prize"));
-    if (r.image) { const p = pic(r); p.style.width = "100%"; p.style.aspectRatio = "16 / 9"; info.append(p); }
+    if (r.image) { const p = pic(r, 640); p.style.width = "100%"; p.style.aspectRatio = r.prize?.kind === "packs" ? "4 / 3" : "16 / 9"; info.append(p); }
     const kv = el("dl", "kv");
     const add = (k, val) => { kv.append(el("dt", null, k)); const dd = el("dd"); dd.append(val); kv.append(dd); };
     add("Worth", usd(r.prizeUsd));

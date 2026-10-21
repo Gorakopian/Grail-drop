@@ -296,13 +296,13 @@ assert.equal(m.prize, undefined);
 {
   const AP = await import("../lib/autopilot.js");
   const { setJSON } = await import("../lib/redis.js");
-  // pure: slot plan — fixed slots per tier (≤$100: 5, under $1000: 20, $1000+: 100), price follows the pack
+  // pure: slot plan — fixed slots per tier (≤$100: 5, under $1000: 20, $1000+: 50), price follows the pack
   assert.deepEqual(AP.plan(25, AP.DEFAULTS), { spots: 5, priceUsd: 5.5 });
   assert.deepEqual(AP.plan(100, AP.DEFAULTS), { spots: 5, priceUsd: 22 });
   assert.deepEqual(AP.plan(250, AP.DEFAULTS), { spots: 20, priceUsd: 13.75 });
   assert.deepEqual(AP.plan(500, AP.DEFAULTS), { spots: 20, priceUsd: 27.5 });
-  assert.deepEqual(AP.plan(1000, AP.DEFAULTS), { spots: 100, priceUsd: 11 });
-  assert.deepEqual(AP.plan(5000, AP.DEFAULTS), { spots: 100, priceUsd: 55 });
+  assert.deepEqual(AP.plan(1000, AP.DEFAULTS), { spots: 50, priceUsd: 22 });
+  assert.deepEqual(AP.plan(5000, AP.DEFAULTS), { spots: 50, priceUsd: 110 });
   for (const usdv of [25, 50, 77, 100, 250, 999, 2500]) { const p = AP.plan(usdv, AP.DEFAULTS); assert.ok(p.spots * p.priceUsd >= usdv * 1.1 - 1e-9, "covers prize + margin " + usdv); }
 
   await setJSON("grail:cc:machines", [

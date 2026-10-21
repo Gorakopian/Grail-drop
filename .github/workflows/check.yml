@@ -1,0 +1,11 @@
+name: check
+on: workflow_dispatch
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          sleep 35
+          curl -s --max-time 70 https://graildrop.vercel.app/api/tick -o t.json; echo "::notice title=tick::$(head -c 200 t.json)"
+          curl -s --max-time 60 https://graildrop.vercel.app/api/state -o s.json
+          echo "::notice title=imgs::$(jq -c '[.raffles[] | (.image // "none") | split("/") | .[-1] | .[0:14]]' s.json | head -c 3000)"

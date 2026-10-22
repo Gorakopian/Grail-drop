@@ -1,8 +1,0 @@
-name: check
-on: workflow_dispatch
-jobs:
-  check:
-    runs-on: ubuntu-latest
-    steps:
-      - run: |
-          c=$(curl -s -o b.txt -w "%{http_code}" --max-time 30 https://graildrop.vercel.app/api/state); echo "::notice title=state::$c $(head -c 200 b.txt | tr -d '\n')"

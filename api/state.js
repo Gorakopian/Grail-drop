@@ -1,7 +1,7 @@
 // GET /api/state → raffles, the bonus pot, SOL price and (signed in) your holder status and spots.
 // Also keeps things moving: expired reservations, deadlines, and draws whose block is final.
 import { sessionAddress } from "../lib/auth.js";
-import { listRaffles, settle, maybeDraw, publicView, treasuryStatus } from "../lib/raffles.js";
+import { listRaffles, settle, maybeDraw, publicView, treasuryStatus, activity } from "../lib/raffles.js";
 import { setJSON, getJSON, hasDatabase, databaseInfo } from "../lib/redis.js";
 import { solUsd, holderStatus } from "../lib/solana.js";
 import { isAdmin, tokenMint, tokenSymbol, MIN_HOLD, HOLD_HOURS, treasury, blockedCountries, BRAND } from "../lib/config.js";
@@ -39,6 +39,7 @@ export default async function handler(req, res) {
       vrf: admin ? await vrfStatus().catch(() => ({ enabled: vrfEnabled() })) : { enabled: vrfEnabled(), problem: vrfProblem() },
       blocked: country && blockedCountries().includes(country) ? country : null,
       raffles: raffles.map((r) => publicView(r, wallet, admin, r.id === detail, price)),
+      activity: activity(raffles),
     });
   } catch (e) {
     console.error("state failed", e);

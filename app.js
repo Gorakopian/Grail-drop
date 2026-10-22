@@ -81,12 +81,15 @@
   const needText = () => `${(state.coin.minHold / 1e6).toLocaleString("en")}M $${state.coin.symbol}`;
 
   // ---------- shared pieces ----------
-  const STAGE = { open: "On sale", drawing: "Drawing", drawn: "Winner drawn", refunding: "Refunding", refunded: "Refunded" };
+  const STAGE = { open: "on sale", drawing: "drawing", drawn: "drawn", refunding: "refunding", refunded: "refunded" };
   function stageOf(r) {
-    if (r.status === "drawn") return r.delivered ? "Prize sent" : r.bought ? "Prize bought" : "Winner drawn";
+    if (r.status === "drawn") return r.delivered ? "prize sent" : r.bought ? "prize bought" : "drawn";
     return STAGE[r.status] || r.status;
   }
-  const stageChip = (r) => el("span", "stage " + (r.status === "open" ? "open" : r.status === "drawn" ? "drawn" : ""), stageOf(r));
+  const stageChip = (r) => el("span", "stage " + (r.status === "open" ? "open" : r.status === "drawing" ? "drawing" : r.status === "drawn" ? "drawn" : /refund/.test(r.status) ? "refund" : ""), stageOf(r));
+  const ago = (ts) => { const m = Math.max(0, Math.round((Date.now() / 1000 - ts) / 60)); return m < 1 ? "just now" : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.round(m / 60)}h ago` : `${Math.round(m / 1440)}d ago`; };
+  const fillPct = (r) => Math.round((100 * r.sold) / Math.max(1, r.spots));
+  const slotUsd = (r) => (r.priceUsd ? usd2(r.priceUsd) : state.solUsd ? usd2(sol(r.priceLamports) * state.solUsd) : null);
 
   function countdown(ts) {
     const s = Math.max(0, ts - Date.now() / 1000);
@@ -95,38 +98,36 @@
     return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`;
   }
 
-  // the ticket strip: paid spots 1..N, then the free holder spots as gold stars
+  // capsules: paid slots 1..N, then the free holder slots (gold, with a star)
   function strip(r) {
     const closed = !["open", "drawing"].includes(r.status);
     const box = el("div", "strip" + (closed ? " closed" : ""));
     const mine = new Set(r.mySpots || []), fresh = new Set(ui[r.id]?.fresh || []);
     const winIdx = r.status === "drawn" ? r.draw.index : -1;
     const show = Math.min(r.spots, 120);
+    const cap = (cls, inner, title) => { const c = el("span", "cap " + cls); c.title = title; c.setAttribute("aria-hidden", "true"); c.append(el("span", null, inner)); return c; };
     for (let i = 0; i < show; i++) {
-      let cls = "tk";
-      if (i < r.sold) cls += mine.has(i) ? " mine" : " sold";
-      else if (i < r.sold + r.reserved) cls += " held";
-      if (i === winIdx) cls += " win";
+      let cls = "", inner = String(i + 1), title = `Slot ${i + 1}: open`;
+      if (i < r.sold) { cls = mine.has(i) ? "mine" : "taken"; inner = "✓"; title = `Slot ${i + 1}: ${mine.has(i) ? "yours" : "taken"}`; }
+      else if (i < r.sold + r.reserved) { cls = "held"; inner = "…"; title = `Slot ${i + 1}: being paid for`; }
+      if (i === winIdx) { cls += " win"; inner = "♛"; title = `Slot ${i + 1}: winner`; }
       if (fresh.has(i)) cls += " new";
-      const t = el("span", cls, String(i + 1));
-      t.title = i === winIdx ? "Winning slot" : mine.has(i) ? "Your slot" : i < r.sold ? "Taken" : i < r.sold + r.reserved ? "Being paid for" : "Open";
-      box.append(t);
+      box.append(cap(cls, inner, title));
     }
     if (r.spots > show) box.append(el("span", "msg", `+${r.spots - show} more`));
     const free = /refund/.test(r.status) ? 0 : r.status === "drawn" ? r.draw.freeWinners.length : r.freeSpots;
-    for (let k = 0; k < free; k++) {
-      const t = el("span", "tk star" + (winIdx === r.spots + k ? " win" : ""), "★");
-      t.title = r.status === "drawn" ? `Free slot: ${short(r.draw.freeWinners[k])}` : "Free slot for a holder";
-      box.append(t);
-    }
+    for (let k = 0; k < free; k++) box.append(cap("star" + (winIdx === r.spots + k ? " win" : ""), "★", r.status === "drawn" ? `Free slot: ${short(r.draw.freeWinners[k])}` : "Free slot for a holder"));
+    const sum = el("span", "sr", `${r.sold} of ${r.spots} slots taken${r.mine ? `, ${r.mine} yours` : ""}${r.reserved ? `, ${r.reserved} being paid for` : ""}${free ? `, plus ${free} free holder slot${free === 1 ? "" : "s"}` : ""}.`);
+    box.prepend(sum);
     return box;
   }
   function legend(r) {
     const lg = el("div", "legend");
-    if (r.status === "open") lg.append(el("span", null, "Open"));
-    lg.append(el("span", "l-sold", "Taken"));
-    if (r.mine) lg.append(el("span", "l-mine", "Yours"));
-    if (r.freeSpots && !/refund/.test(r.status)) lg.append(el("span", "l-star", "Free slot for a holder"));
+    const item = (cls, t) => { const s = el("span", cls); s.append(el("i"), t); lg.append(s); };
+    if (r.status === "open") item("", "open");
+    item("l-sold", "taken");
+    if (r.mine) item("l-mine", "yours");
+    if (r.freeSpots && !/refund/.test(r.status)) item("l-star", "free for a holder");
     return lg;
   }
   const oddsText = (r) => `1 in ${r.spots + (r.status === "drawn" ? r.draw.freeWinners.length : r.freeSpots)} per slot`;
@@ -207,81 +208,145 @@
     return p;
   }
 
-  function raffleCard(r) {
-    const card = el("article", "raffle");
-    const body = el("div", "body");
-    const head = el("div", "head");
-    const h = el("h3"); h.append(link("#/r/" + r.id, r.title));
-    const val = el("span", "value"); val.append("Worth ", el("b", null, usd(r.prizeUsd)));
-    head.append(h, val);
-    const facts = el("div", "facts");
-    const f1 = el("span"); f1.append(el("b", null, `${r.sold} of ${r.spots}`), " paid slots sold"); facts.append(f1);
-    if (r.freeSpots) facts.append(el("span", null, `+ ${r.freeSpots} free for holders`));
-    if (r.status === "open") { const f2 = el("span"); f2.append("Fills or refunds in ", el("b", null, countdown(r.deadline))); facts.append(f2); }
-    if (r.mine) { const f3 = el("span"); f3.append("You have ", el("b", null, String(r.mine))); facts.append(f3); }
-    const meter = el("div", "meter"); meter.append(strip(r), legend(r));
-    body.append(head, facts, meter);
-    if (r.status === "open") body.append(buyRow(r));
-    else body.append(resultLine(r));
-    const m = ui[r.id]?.msg; if (m) body.append(el("p", "msg " + (m.kind || ""), m.text));
-    card.append(pic(r), body);
-    return card;
+  // compact coin-style card for the grid
+  function coinCard(r) {
+    const c = el("a", "coin"); c.href = "#/r/" + r.id;
+    const t = el("div", "t");
+    t.append(el("div", "name", r.title));
+    const r1 = el("div", "row1"); const l = el("span"); l.append(el("b", null, `${r.sold}/${r.spots}`), " slots"); r1.append(l, stageChip(r));
+    const bar = el("div", "fill" + (fillPct(r) >= 70 ? " hot" : "")); const i = el("i"); i.style.width = fillPct(r) + "%"; bar.append(i);
+    bar.setAttribute("role", "img"); bar.setAttribute("aria-label", `${fillPct(r)}% filled`);
+    const r2 = el("div", "row1"); const pr = el("span"); pr.append(el("b", "g", slotUsd(r) || `${sol(r.priceLamports)} SOL`), "/slot");
+    r2.append(pr, el("span", null, r.status === "open" ? countdown(r.deadline) : r.status === "drawn" ? `won by ${r.draw.winnerShort}` : stageOf(r)));
+    t.append(r1, bar, r2);
+    if (r.mine) t.append(el("div", "row1", `you: ${r.mine} slot${r.mine === 1 ? "" : "s"}`));
+    c.append(pic(r, 128), t);
+    return c;
+  }
+
+  // the "king of the hill" slot: the open raffle closest to filling
+  function kothCard(r) {
+    const k = el("section", "koth"); k.setAttribute("aria-label", "Closest to filling");
+    k.append(el("span", "sticker", "closest to full"));
+    const art = el("div", "art"); art.append(pic(r, 384));
+    const info = el("div", "info");
+    const h = el("h2"); h.append(link("#/r/" + r.id, r.title));
+    const nums = el("div", "nums");
+    const n = (label, val) => { const s = el("span"); s.append(label, " ", el("b", null, val)); nums.append(s); };
+    n("worth", usd(r.prizeUsd)); n("filled", `${r.sold}/${r.spots}`); n("ends in", countdown(r.deadline)); n("odds", oddsText(r));
+    const bar = el("div", "fill hot"); const i = el("i"); i.style.width = fillPct(r) + "%"; bar.append(i);
+    info.append(h, nums, bar, strip(r), legend(r), buyRow(r));
+    const m = ui[r.id]?.msg; if (m) info.append(el("p", "msg " + (m.kind || ""), m.text));
+    k.append(art, info);
+    return k;
   }
 
   function resultLine(r) {
     const p = el("p", "msg");
-    if (r.status === "drawing") p.textContent = "Sold out. The winner is being drawn from the next Solana slots…";
-    else if (r.status === "drawn") { p.append(r.youWon ? el("b", null, "You won this. ") : "Won by ", r.youWon ? "" : el("b", null, r.draw.winnerShort), " ", link("#/r/" + r.id, "See the draw")); }
-    else p.textContent = r.status === "refunded" ? "Didn't fill in time. Everyone was refunded." : "Didn't fill in time. Everyone gets their SOL back.";
+    if (r.status === "drawing") p.textContent = "sold out. drawing the winner…";
+    else if (r.status === "drawn") { p.append(r.youWon ? el("b", null, "you won this. ") : "won by ", r.youWon ? "" : el("b", null, r.draw.winnerShort), " ", link("#/r/" + r.id, "see the draw")); }
+    else p.textContent = r.status === "refunded" ? "didn't fill. everyone got refunded." : "didn't fill. refunds on the way.";
     return p;
   }
 
   function buyRow(r) {
     const row = el("div", "buy");
     const left = r.spots - r.sold;
-    const p = el("span", "price", `${sol(r.priceLamports)} SOL `);
-    if (state.solUsd) p.append(el("small", null, `about ${solUsd(r.priceLamports)} per slot`));
-    row.append(p);
     const can = Math.min(r.maxPerWallet - r.mine, left - r.reserved);
-    if (left <= 0) { row.append(el("span", "msg", "Sold out, the draw is next.")); return row; }
-    if (!state.me) { const b = el("button", "btn primary", "Connect to buy a slot"); b.type = "button"; b.onclick = connect; row.append(b); return row; }
-    if (can <= 0) { row.append(el("span", "msg", r.mine >= r.maxPerWallet ? `You have the max ${r.maxPerWallet} slots.` : "All slots are being paid for. Check back in a few minutes.")); return row; }
+    const priceTxt = `${sol(r.priceLamports)} SOL`;
+    if (left <= 0) { row.append(el("span", "msg", "sold out. draw's next.")); return row; }
+    if (!state.me) { const b = el("button", "pull"); b.type = "button"; b.append("PULL", el("small", null, "connect wallet")); b.onclick = connect; row.append(b, el("span", "price", priceTxt)); return row; }
+    if (can <= 0) { row.append(el("span", "msg", r.mine >= r.maxPerWallet ? `you have the max (${r.maxPerWallet}).` : "all slots are being paid for. back in a few min.")); return row; }
     for (let n = 1; n <= Math.min(can, 2); n++) {
-      const b = el("button", "btn" + (n === 1 ? " primary" : ""), n === 1 ? "Buy 1 slot" : `Buy ${n} slots`);
-      b.type = "button"; b.disabled = busy || !!state.blocked;
-      b.onclick = () => buy(r, n);
+      const b = el("button", "pull" + (n === 1 ? "" : " ghost")); b.type = "button";
+      b.append(n === 1 ? "PULL" : "PULL ×2", el("small", null, n === 1 ? priceTxt : `${sol(r.priceLamports * 2)} SOL`));
+      b.setAttribute("aria-label", n === 1 ? `Buy 1 slot for ${priceTxt}` : `Buy 2 slots for ${sol(r.priceLamports * 2)} SOL`);
+      b.disabled = busy || !!state.blocked;
+      b.onclick = () => { if (!matchMedia("(prefers-reduced-motion: reduce)").matches) { const d = el("span", "drop"); b.append(d); setTimeout(() => d.remove(), 600); } buy(r, n); };
       row.append(b);
     }
+    const p = el("span", "price"); if (slotUsd(r)) p.append(el("small", null, `≈ ${slotUsd(r)} per slot`)); row.append(p);
     return row;
   }
 
   // ---------- pages ----------
+  const GROUPS = [["all", null], ["pokémon", /^pokemon/], ["one piece", /^onepiece/], ["sports", /^(soccer|basketball|baseball|football|sports)/], ["watches", /watch/], ["other", null]];
+  const groupOf = (r) => { const code = r.prize?.machine || r.category || ""; const g = GROUPS.find(([n, re]) => re && re.test(code)); return g ? g[0] : r.category === "watch" ? "watches" : "other"; };
+  ui.filter = store.get("slot_filter") || "all";
+  ui.view = store.get("slot_view") || "grid";
+
+  function rafflesTable(list) {
+    const wrap = el("div", "tablewrap");
+    const tbl = el("table");
+    const head = el("tr"); for (const h of ["raffle", "stage", "slots", "slot price", "ends / ended", "worth"]) head.append(el("th", null, h));
+    tbl.append(head);
+    for (const r of list) {
+      const tr = el("tr");
+      const c1 = el("td"); c1.append(link("#/r/" + r.id, r.title));
+      const c2 = el("td"); c2.append(stageChip(r));
+      tr.append(c1, c2, el("td", "num", `${r.sold}/${r.spots}`), el("td", "num", slotUsd(r) || `${sol(r.priceLamports)} SOL`), el("td", "num", r.status === "open" ? countdown(r.deadline) : when(r.deadline)), el("td", "num", usd(r.prizeUsd)));
+      tbl.append(tr);
+    }
+    wrap.append(tbl);
+    return wrap;
+  }
+
   function pageHome() {
     const v = [];
-    const hero = el("section", "hero");
-    hero.append(el("h1", null, "Grab a slot. Win the grail."));
-    hero.append(el("p", null, `Raffles for real graded cards and watches. Every raffle fills or refunds, the winner is picked on-chain, and the prize lands straight in their wallet.`));
-    const t = state.treasury;
-    if (t?.wallet) {
-      const purse = el("div", "purse");
-      purse.append(el("b", null, `${sol(t.availableLamports)} SOL`), el("span", null, `in the treasury for new free slots${state.solUsd ? ` (${solUsd(t.availableLamports)})` : ""}`), link("#/treasury", "See the treasury"));
-      hero.append(purse);
+    const intro = el("section", "intro");
+    const h1 = el("h1"); const sc = el("span", "scribble", "the grail.");
+    sc.insertAdjacentHTML("beforeend", '<svg viewBox="0 0 200 12" preserveAspectRatio="none" aria-hidden="true"><path d="M2 8 C 40 2, 80 11, 120 5 S 180 3, 198 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>');
+    h1.append("grab a slot. win ", sc);
+    intro.append(h1, el("p", null, "real graded cards and watches. fills or refunds, drawn on-chain, prize straight to your wallet."));
+    v.push(intro);
+
+    const open = state.raffles.filter((r) => r.status === "open");
+    const king = [...open].sort((a, b) => fillPct(b) - fillPct(a) || a.deadline - b.deadline)[0];
+    if (king) v.push(kothCard(king));
+
+    const flow = el("div", "flow"); flow.setAttribute("aria-label", "How it works");
+    ["grab a slot", "raffle fills (or everyone's refunded)", "VRF picks the winner", "pack opened", "card in your wallet"].forEach((t, i) => { if (i) flow.append(el("span", "arr", "→")); flow.append(el("span", null, t)); });
+    flow.append(link("#/verify", "check a draw"));
+    v.push(flow);
+
+    const how = el("details");
+    how.append(el("summary", null, "how does it work?"));
+    for (const t of [
+      "Fill or refund: the draw only happens when every paid slot is sold. If a raffle isn't full by its deadline, everyone gets their SOL back.",
+      "Anyone can play: connect a Solana wallet and grab a slot. A few slots per wallet per raffle, so everyone gets a shot.",
+      state.coin.live ? `Free slots for holders: when a raffle fills, 2 extra slots go to random wallets holding ${needText()} or more. Every holder has the same chance, drawn with the same on-chain randomness.` : `Free slots for holders: once $${state.coin.symbol} launches, every full raffle gets 2 extra slots for random holders of ${needText()}, drawn with the same on-chain randomness.`,
+      state.vrf?.enabled ? "Provably fair: the paid slots are locked first, then ORAO's verifiable randomness on Solana picks the winner. Anyone can check the draw." : "Provably fair: the paid slots are locked first, then the hash of a later Solana block picks the winner. Anyone can check the draw.",
+      "Real prizes: packs come from Collector Crypt. Opened right after the draw, the graded card or watch goes straight to the winner's wallet. Keep it, sell it back, or have it shipped.",
+    ]) how.append(el("p", null, t));
+    v.push(how);
+
+    // live raffles: filters, grid or table
+    const live = state.raffles.filter((r) => ["open", "drawing"].includes(r.status) && r !== king);
+    const head = el("div", "bar-row"); head.append(el("h2", null, `live · ${live.length + (king ? 1 : 0)}`));
+    const tools = el("div", "filters");
+    const present = new Set(state.raffles.filter((r) => ["open", "drawing"].includes(r.status)).map(groupOf));
+    for (const [name] of GROUPS) {
+      if (name !== "all" && !present.has(name)) continue;
+      const b = el("button", null, name); b.type = "button"; b.setAttribute("aria-pressed", String(ui.filter === name));
+      b.onclick = () => { ui.filter = name; store.set("slot_filter", name); paint(); };
+      tools.append(b);
     }
-    v.push(hero);
-    const live = state.raffles.filter((r) => ["open", "drawing"].includes(r.status)).sort((a, b) => a.deadline - b.deadline);
-    v.push(el("h2", null, "Live raffles"));
-    v.push(...(live.length ? live.map(raffleCard) : [el("p", "empty", "No raffle is open right now. The next drop gets announced on X first.")]));
-    const past = state.raffles.filter((r) => !["open", "drawing"].includes(r.status)).slice(0, 3);
-    if (past.length) { v.push(el("h2", null, "Just finished"), ...past.map(raffleCard)); const a = el("p"); a.append(link("#/all", "See all raffles")); v.push(a); }
-    v.push(el("h2", null, "How it works"));
-    const rules = el("div", "rules");
-    const rule = (h, p) => { const d = el("div"); d.append(el("h3", null, h), el("p", null, p)); rules.append(d); };
-    rule("Fill or refund", "The draw only happens when every paid slot is sold. If a raffle isn't full by its deadline, everyone gets their SOL back.");
-    rule("Anyone can play", "Connect a Solana wallet and grab a slot. A few slots per wallet per raffle, so everyone gets a shot.");
-    rule("Free slots for holders", state.coin.live ? `When a raffle fills, 2 extra slots go to random wallets holding ${needText()} or more. Every holder has the same chance, drawn with the same on-chain randomness.` : `Once $${state.coin.symbol} launches, every full raffle gets 2 extra slots for random holders of ${needText()}, drawn with the same on-chain randomness.`);
-    rule("Provably fair", state.vrf?.enabled ? "The paid slots are locked first, then ORAO's verifiable randomness on Solana picks the winner. Anyone can check the draw." : "The paid slots are locked first, then the hash of a later Solana block picks the winner. Anyone can check the draw.");
-    rule("Real prizes", "Packs come from Collector Crypt: opened right after the draw, the graded card or watch goes straight to the winner's wallet. Keep it, sell it back, or have it shipped.");
-    v.push(rules);
+    const vt = el("button", null, ui.view === "grid" ? "▤ table" : "▦ grid"); vt.type = "button"; vt.setAttribute("aria-label", ui.view === "grid" ? "Show as table" : "Show as grid");
+    vt.onclick = () => { ui.view = ui.view === "grid" ? "table" : "grid"; store.set("slot_view", ui.view); paint(); };
+    tools.append(vt);
+    head.append(tools);
+    v.push(head);
+    const shown = live.filter((r) => ui.filter === "all" || groupOf(r) === ui.filter).sort((a, b) => fillPct(b) - fillPct(a) || a.deadline - b.deadline);
+    if (!shown.length) v.push(el("p", "empty joke", king ? "nothing else here. the one above is all yours." : "no raffles live right now. touch grass, check back soon."));
+    else if (ui.view === "table") v.push(rafflesTable(shown));
+    else { const g = el("div", "grid"); g.append(...shown.map(coinCard)); v.push(g); }
+
+    const past = state.raffles.filter((r) => !["open", "drawing"].includes(r.status)).slice(0, 4);
+    if (past.length) {
+      const ph = el("div", "bar-row"); ph.append(el("h2", null, "just finished"), link("#/all", "all raffles →"));
+      const g = el("div", "grid"); g.append(...past.map(coinCard));
+      v.push(ph, g);
+    }
     return v;
   }
 
@@ -346,93 +411,124 @@
 
   function pageRaffle(id) {
     const r = state.raffles.find((x) => x.id === id);
-    if (!r) return [el("h1", null, "Raffle not found"), el("p", "lede", "It may have been removed.")];
+    if (!r) return [el("h1", null, "raffle not found"), el("p", "lede", "it may have been removed.")];
     const v = [];
-    const h = el("h1", null, r.title); v.push(h);
-    const sub = el("p", "lede"); sub.append(stageChip(r), " ", `${r.sold} of ${r.spots} paid slots sold at ${sol(r.priceLamports)} SOL, plus ${r.freeSpots} free slot${r.freeSpots === 1 ? "" : "s"} for holders.`);
-    v.push(sub);
-    const stats = el("div", "stats");
-    const stat = (k, val, s) => { const d = el("div", "stat"); d.append(el("div", "k", k), el("div", "v", val)); if (s) d.append(el("div", "s", s)); stats.append(d); };
-    stat("Prize", usd(r.prizeUsd), r.prize?.kind === "packs" ? `${r.prize.count}× ${r.prize.name}` : r.link ? "on Courtyard" : r.category);
-    stat("Paid slots", `${r.sold} / ${r.spots}`, `${r.spots - r.sold} left, max ${r.maxPerWallet} per wallet`);
-    stat("Free slots", String(r.freeSpots), r.freeSpots ? "for random holders" : "none in this raffle");
-    if (r.priceUsd) stat("Slot price", usd2(r.priceUsd), r.priceLamports ? `${sol(r.priceLamports)} SOL right now` : "paid in SOL");
-    else stat("Slot price", `${sol(r.priceLamports)} SOL`, state.solUsd ? `about ${solUsd(r.priceLamports)}` : "");
-    if (r.status === "open") stat("Closes in", countdown(r.deadline), when(r.deadline));
-    v.push(stats);
 
-    const spots = el("section", "panel");
-    spots.append(el("h2", null, "The slots"), strip(r), legend(r));
-    if (r.status === "open") spots.append(buyRow(r));
-    const m = ui[r.id]?.msg; if (m) spots.append(el("p", "msg " + (m.kind || ""), m.text));
-    if (r.myRefunds) for (const f of r.myRefunds) spots.append(el("p", "msg " + (f.paid ? "ok" : ""), f.paid ? `Refunded ${sol(f.lamports)} SOL to your wallet.` : `You'll get ${sol(f.lamports)} SOL back.`));
-    v.push(spots);
+    // top: pack art | the essentials, the slots and the PULL lever
+    const top = el("section", "split");
+    const art = el("div", "art"); art.append(pic(r, 640));
+    const info = el("div", "info");
+    const h = el("h1", null, r.title);
+    const line = el("div", "nums"); line.append(stageChip(r));
+    const n = (label, val, tip) => { const s2 = el("span"); s2.append(label, " "); const b2 = el("b", null, val); if (tip) b2.title = tip; s2.append(b2); line.append(s2); };
+    n("worth", usd(r.prizeUsd), r.prize?.kind === "packs" ? `${r.prize.count}× ${r.prize.name}` : r.link ? "on Courtyard" : r.category);
+    n("slots", `${r.sold}/${r.spots}`, `${r.spots - r.sold} left, max ${r.maxPerWallet} per wallet`);
+    if (r.freeSpots) n("free", String(r.freeSpots), "for random holders");
+    if (r.priceUsd) n("slot", usd2(r.priceUsd), r.priceLamports ? `${sol(r.priceLamports)} SOL right now` : "paid in SOL");
+    else n("slot", `${sol(r.priceLamports)} SOL`, state.solUsd ? `about ${solUsd(r.priceLamports)}` : "");
+    if (r.status === "open") n("ends in", countdown(r.deadline), when(r.deadline));
+    const bar = el("div", "fill" + (fillPct(r) >= 70 ? " hot" : "")); const bi = el("i"); bi.style.width = fillPct(r) + "%"; bar.append(bi);
+    info.append(h, line, bar, strip(r), legend(r));
+    if (r.status === "open") info.append(buyRow(r), el("div", "odds", `odds: ${oddsText(r)} · max ${r.maxPerWallet} per wallet`));
+    else if (r.status !== "drawn") info.append(resultLine(r));
+    else info.append(el("p", "msg", r.youWon ? "you won this one. your pull is below ↓" : `won by ${r.draw.winnerShort}. the pull is below ↓`));
+    const m = ui[r.id]?.msg; if (m) info.append(el("p", "msg " + (m.kind || ""), m.text));
+    if (r.myRefunds) for (const f of r.myRefunds) info.append(el("p", "msg " + (f.paid ? "ok" : ""), f.paid ? `refunded ${sol(f.lamports)} SOL to your wallet.` : `you'll get ${sol(f.lamports)} SOL back.`));
+    top.append(art, info);
+    v.push(top);
 
-    const cols = el("div", "cols");
-    const prog = el("section", "panel"); prog.append(el("h2", null, "Progress"), steps(r));
-    const info = el("section", "panel"); info.append(el("h2", null, "The prize"));
-    if (r.image) { const p = pic(r, 640); p.style.width = "100%"; p.style.aspectRatio = r.prize?.kind === "packs" ? "4 / 3" : "16 / 9"; info.append(p); }
-    const kv = el("dl", "kv");
-    const add = (k, val) => { kv.append(el("dt", null, k)); const dd = el("dd"); dd.append(val); kv.append(dd); };
-    add("Worth", usd(r.prizeUsd));
-    if (r.link) add("Listing", link(r.link, "Open on Courtyard", true));
-    if (r.prize?.kind === "packs") {
-      add("Packs", `${r.prize.count}× ${r.prize.name} at $${r.prize.unitUsd} each, from Collector Crypt`);
-      add("How you get it", "Opened automatically right after the draw. The card lands in the winner's wallet as an NFT backed by the real graded card: keep it, sell it, or have the physical card shipped from Collector Crypt.");
-    }
-    add("Opened", when(r.createdAt));
-    add("Paid to", solscan("account", r.payTo || state.entryWallet));
-    info.append(kv);
-    cols.append(prog, info); v.push(cols);
-
+    // the result: pulled cards, face down until you flip them
     if (r.status === "drawn") {
-      const res = el("section", "panel");
-      res.append(el("h2", null, r.youWon ? "You won" : "Winner"));
-      const w = el("p", "result"); w.style.margin = "0";
-      w.append(r.youWon ? (r.prize?.kind === "packs" ? "This one is yours." : "This one is yours. Tell us where to send it.") : "Won by ", r.youWon ? "" : el("b", null, r.draw.winnerShort), r.youWon ? "" : ` with ${r.draw.index >= r.spots ? "a free holder slot" : "slot " + (r.draw.index + 1)}.`);
-      res.append(w);
+      const res = el("section", "plain");
+      res.append(el("h2", null, r.youWon ? "you won 🎉" : `won by ${r.draw.winnerShort}`));
+      if (!r.youWon) res.append(el("p", "msg", `with ${r.draw.index >= r.spots ? "a free holder slot" : "slot " + (r.draw.index + 1)}.`));
       if (r.prize?.kind === "packs") {
-        if (r.youWon) res.append(el("p", "msg ok", r.auto?.status === "done" ? "Your card is in your wallet. Open it on Collector Crypt to keep, sell or ship it." : "Your packs are being opened. The card goes straight to your wallet, nothing to fill in."));
-        for (const c of r.auto?.cards || []) res.append(cardRow(c));
-      } else if (r.youWon && !r.claimed) res.append(claimForm(r)); else if (r.youWon) res.append(el("p", "msg ok", r.delivered ? "Prize sent." : "Got your details. Your prize is on its way."));
-      const a = el("p"); a.style.margin = "0"; a.append(link("#/verify/" + r.id, "Check this draw yourself"));
-      if (r.draw.vrf?.account) a.append(" · ", solscan("account", r.draw.vrf.account, "The random number on Solana"));
+        if (r.youWon) res.append(el("p", "msg ok", r.auto?.status === "done" ? "your card is in your wallet. open it on Collector Crypt to keep, sell or ship it." : "your packs are being opened. the card goes straight to your wallet, nothing to fill in."));
+        const cards = r.auto?.cards || [];
+        if (cards.length) { const pulls = el("div", "pulls"); pulls.append(...cards.map(flipCard)); res.append(pulls); }
+        else res.append(el("p", "empty", "no pulls yet. packs open right after the draw."));
+      } else if (r.youWon && !r.claimed) res.append(claimForm(r)); else if (r.youWon) res.append(el("p", "msg ok", r.delivered ? "prize sent." : "got your details. your prize is on its way."));
+      const a = el("p", "msg"); a.style.margin = "0"; a.append(link("#/verify/" + r.id, "check this draw yourself"));
+      if (r.draw.vrf?.account) a.append(" · ", solscan("account", r.draw.vrf.account, "the random number on Solana"));
       res.append(a);
       v.push(res);
+      if (r.youWon) winFlash(r);
     }
 
-    const fs = el("section", "panel");
-    fs.append(el("h2", null, "Free slots"));
-    fs.append(el("p", "msg", `Free slots go to random wallets holding ${needText()} or more for ${state.coin.holdHours} hours. Every eligible wallet has the same chance and nobody gets two.`));
+    // progress + prize details, uneven columns
+    const cols = el("div", "cols");
+    const prog = el("section", "panel"); prog.append(el("h2", null, "progress"), steps(r));
+    const pz = el("section", "panel"); pz.append(el("h2", null, "the prize"));
+    const kv = el("dl", "kv");
+    const add = (k, val) => { kv.append(el("dt", null, k)); const dd = el("dd"); dd.append(val); kv.append(dd); };
+    add("worth", usd(r.prizeUsd));
+    if (r.link) add("listing", link(r.link, "open on Courtyard", true));
+    if (r.prize?.kind === "packs") add("packs", `${r.prize.count}× ${r.prize.name} · $${r.prize.unitUsd} each · Collector Crypt`);
+    add("opened", when(r.createdAt));
+    add("paid to", solscan("account", r.payTo || state.entryWallet));
+    pz.append(kv);
+    if (r.prize?.kind === "packs") {
+      const d = el("details"); d.append(el("summary", null, "what happens after the draw?"),
+        el("p", null, "Opened automatically right after the draw. The card lands in the winner's wallet as an NFT backed by the real graded card: keep it, sell it, or have the physical card shipped from Collector Crypt."));
+      pz.append(d);
+    }
+    cols.append(prog, pz); v.push(cols);
+
+    // free slots: plain section, explanation folded
+    const fs = el("section", "plain");
+    fs.append(el("h2", null, "free slots"));
     if (r.status === "drawn" && r.draw.freeWinners.length) {
       const ul = el("ul");
-      r.draw.freeWinners.forEach((wlt, k) => { const li = el("li"); li.append(`Slot ★${k + 1}: `, solscan("account", wlt)); ul.append(li); });
+      r.draw.freeWinners.forEach((wlt, k) => { const li = el("li"); li.append(`slot ★${k + 1}: `, solscan("account", wlt)); ul.append(li); });
       fs.append(ul);
-    } else fs.append(el("p", "msg", r.freeSpots ? "No winners yet. They're drawn when the raffle fills." : "This raffle has no free slots."));
+    } else fs.append(el("p", "msg", r.freeSpots ? "no winners yet. drawn when the raffle fills." : "none in this raffle."));
+    const fd = el("details"); fd.append(el("summary", null, "who gets free slots?"), el("p", null, `Free slots go to random wallets holding ${needText()} or more for ${state.coin.holdHours} hours. Every eligible wallet has the same chance and nobody gets two.`));
+    fs.append(fd);
     v.push(fs);
 
-    const ps = el("section", "panel");
-    ps.append(el("h2", null, "Paid slots"), el("p", "msg", "In the order they were bought. This order is the slot numbering the draw uses."));
+    // paid slots ledger
+    const ps = el("section", "plain");
+    ps.append(el("h2", null, "paid slots"), el("p", "msg", "in buy order. this order is the slot numbering the draw uses."));
     const tw = el("div", "tablewrap"); const tbl = el("table");
-    const hr = el("tr"); for (const x of ["Slots", "Wallet", "Payment"]) hr.append(el("th", null, x)); tbl.append(hr);
-    let n = 0;
+    const hr = el("tr"); for (const x of ["slots", "wallet", "payment"]) hr.append(el("th", null, x)); tbl.append(hr);
+    let k = 0;
     for (const e of r.entries || []) {
       const tr = el("tr");
-      const nums = e.n === 1 ? `${n + 1}` : `${n + 1}–${n + e.n}`; n += e.n;
+      const nums = e.n === 1 ? `${k + 1}` : `${k + 1}–${k + e.n}`; k += e.n;
       const c2 = el("td", "addr"); c2.append(solscan("account", e.wallet, e.wallet));
-      const c3 = el("td"); c3.append(solscan("tx", e.sig, "transaction"));
-      tr.append(el("td", null, nums), c2, c3); tbl.append(tr);
+      const c3 = el("td"); c3.append(solscan("tx", e.sig, "tx"));
+      tr.append(el("td", "num", nums), c2, c3); tbl.append(tr);
     }
-    if (!(r.entries || []).length) { const tr = el("tr"); const td = el("td", "empty", "Nobody yet. Be the first."); td.colSpan = 3; tr.append(td); tbl.append(tr); }
+    if (!(r.entries || []).length) { const tr = el("tr"); const td = el("td", "empty", "nobody yet. be first."); td.colSpan = 3; tr.append(td); tbl.append(tr); }
     tw.append(tbl); ps.append(tw); v.push(ps);
     return v;
   }
 
-  function cardRow(c) {
-    const d = el("div", "card-pull");
-    d.append(el("b", null, c.name || "Card"), el("span", "chip", [c.rarity, c.grade ? `grade ${c.grade}` : null].filter(Boolean).join(", ") || "pulled"));
-    if (c.nft) { d.append(" ", solscan("token", c.nft, "NFT on Solscan")); }
-    return d;
+  // a pulled card: face down, flips on click; the frame colour is the rarity Collector Crypt reported
+  function flipCard(c) {
+    const rar = String(c.rarity || "").toLowerCase();
+    const b = el("button", "flip" + (["common", "uncommon", "rare", "epic"].includes(rar) ? " r-" + rar : ""));
+    b.type = "button"; b.setAttribute("aria-pressed", "false"); b.setAttribute("aria-label", `Pulled card: ${c.name || "card"}${c.rarity ? `, ${c.rarity}` : ""}. Click to flip.`);
+    const inner = el("div", "in");
+    const back = el("div", "face back-side", "SLOT");
+    const front = el("div", "face front");
+    const top = el("div"); top.append(el("div", "rar", c.rarity || "pulled"), el("b", null, c.name || "Card"));
+    const bottom = el("div"); if (c.grade) bottom.append(el("div", "msg", `grade ${c.grade}`));
+    if (c.nft) { const l = solscan("token", c.nft, "NFT on Solscan"); l.onclick = (e) => e.stopPropagation(); bottom.append(l); }
+    front.append(top, bottom);
+    inner.append(back, front); b.append(inner);
+    b.onclick = () => b.setAttribute("aria-pressed", String(b.getAttribute("aria-pressed") !== "true"));
+    return b;
+  }
+  function cardRow(c) { return flipCard(c); }
+
+  // a one-time "SSR!" flash the first time you see your win
+  function winFlash(r) {
+    const key = "slot_won_" + r.id;
+    if (store.get(key) || matchMedia("(prefers-reduced-motion: reduce)").matches) { store.set(key, "1"); return; }
+    store.set(key, "1");
+    const f = el("div", "ssr"); f.setAttribute("aria-hidden", "true"); f.append(el("b", null, "SSR!"));
+    document.body.append(f); setTimeout(() => f.remove(), 1500);
   }
 
   function claimForm(r) {
@@ -813,9 +909,29 @@
   };
 
   // ---------- data ----------
+  function renderTicker() {
+    const box = $("ticker"); if (!box) return;
+    const ev = state.activity || [];
+    if (!ev.length) { box.hidden = true; return; }
+    box.hidden = false;
+    const run = el("div", "run");
+    for (const e of ev) {
+      const a = el("a"); a.href = "#/r/" + e.id;
+      if (e.kind === "buy") a.append(el("b", null, short(e.wallet)), " ", el("span", "g", `bought ${e.n === 1 ? `slot #${e.from}` : `slots #${e.from}–${e.from + e.n - 1}`}`), ` · ${e.title} · ${ago(e.at)}`);
+      else if (e.kind === "win") a.append(el("b", null, short(e.wallet)), " ", el("span", "y", "won"), ` ${e.title} · ${ago(e.at)}`);
+      else if (e.kind === "card") a.append(el("b", null, short(e.wallet)), " pulled ", el("span", "y", `${e.card || "a card"}${e.rarity ? ` (${e.rarity.toLowerCase()})` : ""}`), ` · ${ago(e.at)}`);
+      else if (e.kind === "refunded") a.append(`${e.title} didn't fill · refunded · ${ago(e.at)}`);
+      else a.append(el("span", "g", "new"), ` ${e.title} · ${e.spots} slots${e.priceUsd ? ` @ ${usd2(e.priceUsd)}` : ""} · ${ago(e.at)}`);
+      run.append(a);
+    }
+    box.replaceChildren(run);
+    run.style.animationDuration = Math.max(30, ev.length * 5) + "s";
+  }
+
   function paint() {
     const { page, arg } = route();
     renderWallet();
+    renderTicker();
     const cur = page === "raffle" ? "home" : page;
     for (const a of document.querySelectorAll("[data-nav]")) { if (a.dataset.nav === cur) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); }
     $("blocked").hidden = !state.blocked;

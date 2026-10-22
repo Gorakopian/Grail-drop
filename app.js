@@ -227,7 +227,7 @@
   // the "king of the hill" slot: the open raffle closest to filling
   function kothCard(r) {
     const k = el("section", "koth"); k.setAttribute("aria-label", "Closest to filling");
-    k.append(el("span", "sticker", "closest to full"));
+    k.append(el("span", "sticker", r.sold ? "closest to full" : "fills fastest · fewest slots"));
     const art = el("div", "art"); art.append(pic(r, 384));
     const info = el("div", "info");
     const h = el("h2"); h.append(link("#/r/" + r.id, r.title));
@@ -301,7 +301,8 @@
     v.push(intro);
 
     const open = state.raffles.filter((r) => r.status === "open");
-    const king = [...open].sort((a, b) => fillPct(b) - fillPct(a) || a.deadline - b.deadline)[0];
+    // closest to full: highest % filled, then fewest slots left, then ending soonest
+    const king = [...open].sort((a, b) => fillPct(b) - fillPct(a) || (a.spots - a.sold) - (b.spots - b.sold) || a.deadline - b.deadline)[0];
     if (king) v.push(kothCard(king));
 
     const flow = el("div", "flow"); flow.setAttribute("aria-label", "How it works");
@@ -336,7 +337,7 @@
     tools.append(vt);
     head.append(tools);
     v.push(head);
-    const shown = live.filter((r) => ui.filter === "all" || groupOf(r) === ui.filter).sort((a, b) => fillPct(b) - fillPct(a) || a.deadline - b.deadline);
+    const shown = live.filter((r) => ui.filter === "all" || groupOf(r) === ui.filter).sort((a, b) => fillPct(b) - fillPct(a) || (a.spots - a.sold) - (b.spots - b.sold) || a.deadline - b.deadline);
     if (!shown.length) v.push(el("p", "empty joke", king ? "nothing else here. the one above is all yours." : "no raffles live right now. touch grass, check back soon."));
     else if (ui.view === "table") v.push(rafflesTable(shown));
     else { const g = el("div", "grid"); g.append(...shown.map(coinCard)); v.push(g); }
@@ -924,8 +925,11 @@
       else a.append(el("span", "g", "new"), ` ${e.title} · ${e.spots} slots${e.priceUsd ? ` @ ${usd2(e.priceUsd)}` : ""} · ${ago(e.at)}`);
       run.append(a);
     }
-    box.replaceChildren(run);
-    run.style.animationDuration = Math.max(30, ev.length * 5) + "s";
+    // the items twice in a row, so the strip loops without a gap (the copy is hidden from screen readers)
+    const copy = run.cloneNode(true); copy.setAttribute("aria-hidden", "true"); for (const a of copy.querySelectorAll("a")) a.tabIndex = -1;
+    const track = el("div", "track"); track.append(run, copy);
+    box.replaceChildren(track);
+    track.style.animationDuration = Math.max(40, ev.length * 4) + "s";
   }
 
   function paint() {
